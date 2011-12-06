@@ -20,8 +20,6 @@
 #include "config/arguments.h"
 #include "config/help.h"
 
-#include "scheduler/schedulers/scheduler.h"
-
 #include "types/image.h"
 #include "types/image_types.h"
 #include "types/buffered_stream.h"
@@ -70,7 +68,6 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	init_scheduler();
 	init_device(param);
 
 #ifdef PART_TIME
@@ -164,7 +161,6 @@ int main(int argc, char **argv)
 	printf("%ld\n", stop_measure(start_global)/* + copy_time*/);
 #endif
 
-	shutdown_scheduler();
 	free(img);
 
 //	println_end(INFO);

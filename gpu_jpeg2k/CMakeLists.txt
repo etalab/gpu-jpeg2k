@@ -19,23 +19,12 @@ add_subdirectory(config)
 add_subdirectory(dwt)
 add_subdirectory(preprocessing)
 add_subdirectory(misc)
-add_subdirectory(multi_gpu)
 add_subdirectory(tier1)
 add_subdirectory(tier2)
 add_subdirectory(file_format)
 add_subdirectory(file_access)
 add_subdirectory(types)
 add_subdirectory(klt)
-
-#scheduler
-add_subdirectory(scheduler/policies)
-add_subdirectory(scheduler/queues)
-add_subdirectory(scheduler/workers)
-add_subdirectory(scheduler/tasks)
-add_subdirectory(scheduler/timing)
-add_subdirectory(scheduler/schedulers)
-add_subdirectory(scheduler/models)
-
 
 cuda_add_executable(encoder  
 print_info/print_info.c

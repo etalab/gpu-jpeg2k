@@ -8,7 +8,6 @@ extern "C" {
 	#include "gpu_coder.h"
 	#include "../../misc/memory_management.cuh"
 	#include "../../print_info/print_info.h"
-	#include "../../multi_gpu/entropy_coding.h"
 }
 
 #include <iostream>
@@ -305,48 +304,13 @@ void encode_tasks_serial(type_tile *tile) {
 	free(tasks);
 }
 
-void encode_tasks_parallel(type_tile *tile) {
-	type_coding_param *coding_params = tile->parent_img->coding_param;
-
-	std::list<type_codeblock *> cblks;
-	extract_cblks(tile, cblks);
-
-	EntropyCodingTaskInfo *tasks = (EntropyCodingTaskInfo *) malloc(sizeof(EntropyCodingTaskInfo) * cblks.size());
-
-	std::list<type_codeblock *>::iterator ii = cblks.begin();
-
-	int num_tasks = 0;
-	for(; ii != cblks.end(); ++ii)
-		convert_to_task(tasks[num_tasks++], *(*ii));
-
-	encode_tasks_multigpu(tile, tasks, num_tasks, coding_params);
-
-//	printf("kernel consumption: %f\n", t);
-
-	ii = cblks.begin();
-
-	for(int i = 0; i < num_tasks; i++, ++ii)
-	{
-		(*ii)->codestream = tasks[i].codeStream;
-		(*ii)->length = tasks[i].length;
-		(*ii)->significant_bits = tasks[i].significantBits;
-		(*ii)->num_coding_passes = tasks[i].codingPasses;
-	}
-
-	free(tasks);
-}
-
 void encode_tile(type_tile *tile, int flag = 0)
 {
 //	println_start(INFO);
 
 //	start_measure();
 
-	if(flag == 0) {
-		encode_tasks_serial(tile);
-	} else {
-		encode_tasks_parallel(tile);
-	}
+	encode_tasks_serial(tile);
 
 //	stop_measure(INFO);
 

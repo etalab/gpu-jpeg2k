@@ -11,5 +11,4 @@ cuda_add_library(gpu_coeff_coder gpu_coeff_coder.cpp gpu_coeff_coder2.cu)
 
 TARGET_LINK_LIBRARIES(gpu_coeff_coder 
 	misc
-	multi_gpu
 )
