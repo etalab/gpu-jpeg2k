@@ -1,0 +1,13 @@
+How to properly build the project:
+While you are in the root directory of the project issue following commands:
+
+> mkdir build
+> cd build
+> cmake ..
+> make
+
+There should be brand new executable in the build directory.
+
+You can also build only chosen module:
+make decoder
+make encoder

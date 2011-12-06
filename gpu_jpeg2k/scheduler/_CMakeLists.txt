@@ -1,0 +1,52 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+
+SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake" "${PROJECT_SOURCE_DIR}/CMake/cuda" ${CMAKE_MODULE_PATH})
+FIND_PACKAGE(CUDA)
+
+#Uncomment next line to enable debugging (for use with cuda-gdb)
+SET(CUDA_NVCC_FLAGS -g -G --compiler-options -fpermissive)
+#SET(CMAKE_CXX_FLAGS "-03")
+SET(CMAKE_C_FLAGS "-g -O3")
+SET(CUDA_NVCC_FLAGS --compiler-options -fpermissive -arch sm_11 --maxrregcount 64 --ptxas-options=-v)
+SET(CUDA_VERBOSE_BUILD OFF)
+
+add_subdirectory(policies)
+add_subdirectory(queues)
+add_subdirectory(workers)
+add_subdirectory(tasks)
+add_subdirectory(timing)
+add_subdirectory(schedulers)
+add_subdirectory(models)
+
+cuda_add_executable(vector
+vector_cpu.c
+vector_cuda.cu
+vector.c
+vector_models.c)
+
+cuda_add_executable(test
+test_cpu.c
+test_cuda.cu
+test.c
+test_models.c
+read_file.c)
+
+TARGET_LINK_LIBRARIES(vector
+models
+policies
+queues
+workers
+tasks
+timing
+schedulers
+pthread)
+
+TARGET_LINK_LIBRARIES(test
+models
+policies
+queues
+workers
+tasks
+timing
+schedulers
+pthread)

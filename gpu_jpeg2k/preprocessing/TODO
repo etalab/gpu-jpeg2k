@@ -1,0 +1,23 @@
+TODO file for CUDA JPEG2000 preprocessing module.
+
++send image data, to device in char's not float's -> possible 4x speed up
+	-speed up of about 30%
+	-also device->host in reversed RCT is done on uchar's
+	
+-use mapped memory (cudaAllocMappedMemory)
+-generate chart execution_time vs BLOCK_SIZE
+-is dc level shifting really necessary, does it provide any performance benefits?
+-implement async memory copy. Start executing kernels right after sufficent amount of data is in the device mem.
+ 
+-coalesced memory (RRR...,GGGG..., BBBB...)
+	Implementation of coalesced memory access using shared memory didn't introduce any performance gains :(.
+	Is the mem access already coalesced? (not possible, kernels ready 3 values in a row, maybe cuda env is aligining the values in a special way?)
+	next step would be to try (RRR...,GGGG..., BBBB...)-coalescing, will have to get rid of the opencv.
+
+
+-input padding so that it's a n*16 (n*2^i) or in-kernel checking boundaries.
+	+in-kernel checking boundaries are implemented since about 10 revs.
+	
+-2D CUDA thread blocks 
+-scalability to more devices/cores
+

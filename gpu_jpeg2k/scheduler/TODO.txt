@@ -1,0 +1,63 @@
+- analiza kosztu zadań w zależności od ich wielkości, funkcja w której 
+	- parametrem wejściowym jest wielkość zadania
+	- parametrem wyjściowym koszt zadania
+	(dla małych wielkości zadań może być szybsze CPU (koszty przesłania danych przez PCI-express)
+	większe zadania liczone na GPU)
+- szybkość przetwarzania danej architektury określona na podstawie:
+	- teoretycznej ilości GFLOPs
+	- przyspieszenia kodu w zależności od PU
+	
+- szeregowanie na podstawie	
+	- wielkości problemu
+	- wydajności energetycznej
+	- historii poprzednich uruchomień (benchmarking)
+	- przydzielonych kosztów do zadań
+	- zajętości PUs
+	
+- polityki szeregowania zadań:
+	- greedy 
+		- jedna wspólna kolejka fifo dla wszystkich workerów
+		- zadanie przydzielane pierwszemu wolnemu workerowi
+		Algorytm:
+		przydziel najstarsze zadanie pierwszemu workerowi który jest wolny
+	- weighted random
+		- jedna kolejka fifo dla każdego workera
+		- każdy worker posiada określoną wagę w zależności od architektury
+		- zadania z określonym prawdopodobieństwem rozdzielane pomiędzy workerów
+		Algorytm:
+		dla każdego workera "i" przydziel wagę "w(i)"
+		wylosuj liczbę "r" z przedziału [0, sum_1_n(wi)), gdzie sum_1_n(w(i)) - suma_1_n wag wzystkich workerów
+		wybierz workera "j" dla którego sum_1_i=j-1(w(i-1)) <= r < sum_1_i=j(w(i)), gdzie w(0) = 0
+	- work-stealing
+		- jedna kolejka deque dla każdego workera
+		- przydzielaj zadania kolejnym wokerom (round-robin)
+		- worker jeżeli opróżnił swoja kolejkę zabiera zadania innym workerom
+		Algortym:
+		n - ilość zadań
+		m - ilość kolejek
+		
+		for i=1..n do
+			przydziel zadanie do kolejki queue(i%m)
+			
+		if(queue(i) == empty)
+			 for i=1..m
+			 	if(try_lock(queue(i)))
+			 		get_task(queue(i))
+			 		unlock(queue(i))
+			 		break
+	- heft - the heterogeneous-earliest-finish-time
+		- jedna kolejka fifo dla każdego workera
+		- ustal koszt obliczeń dla każdego z zadań dla wszystkich workerów
+			- koszt na podstawie funkcji dostarczonej przez developera
+			- koszt na podstawie wielkości danych wejściowych
+			- koszt na podstawie historii uruchomień
+		- przydziela zadania do workerów aby zminimalizować czas zakończenia pbliczeń
+		Algorytm:
+		eft - earliest execution finish time
+		while są nieprzydzielone zadania
+			wybierz pierwsze zadanie n(i) z kolejki
+			for każdego workera(k) c PU do
+				oblicz czas zakończenia obliczeń eft(n(i), worker(k))
+			przydziel zadanie n(i) do worker(j), który minimalizuje czas eft zadania n(i)
+		end 
+		

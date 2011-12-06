@@ -1,0 +1,1 @@
+This directory is for decoding-file-format - specific files. Should it be also common with file format writing (for sure the constant values (like box signatures) should be). Then renaming of this directory should be done.  

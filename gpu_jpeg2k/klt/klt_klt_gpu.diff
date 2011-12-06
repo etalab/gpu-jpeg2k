@@ -1,0 +1,483 @@
+Index: gs.cu
+===================================================================
+--- gs.cu	(wersja 0)
++++ gs.cu	(wersja 0)
+@@ -0,0 +1,69 @@
++/**
++ * @file gs.cu
++ *
++ * @author Kamil Balwierz
++ */
++
++#include <math.h>
++#include <time.h>
++#include "gs.h"
++
++
++int gram_schmidt(int N, type_data* output, type_data *dinput, type_data *eValues) {
++	cublasStatus status;
++	int J = 10000;
++	type_data er = 1.0e-7;
++	int j, k;
++	type_data *dT = 0;
++	status = cublasAlloc(N*N, sizeof (dT[0]), (void**) &dT);
++	if (status != CUBLAS_STATUS_SUCCESS) {
++		fprintf(stderr, "! device memory allocation error (dT)\n");
++		return EXIT_FAILURE;
++	}
++	type_data *doutput = 0;
++	status = cublasAlloc(N*N, sizeof (doutput[0]), (void**) &doutput);
++	if (status != CUBLAS_STATUS_SUCCESS) {
++		fprintf(stderr, "! device memory allocation error (doutput)\n");
++		return EXIT_FAILURE;
++	}
++	if (eValues == 0) {
++		fprintf(stderr, "! host memory allocation error: T\n");
++		return EXIT_FAILURE;
++	}
++	type_data *dU = 0;
++	status = cublasAlloc(N, sizeof (dU[0]), (void**) &dU);
++	if (status != CUBLAS_STATUS_SUCCESS) {
++		fprintf(stderr, "! device memory allocation error (dU)\n");
++		return EXIT_FAILURE;
++}
++	type_data a;
++	for (k = 0; k < N; k++) {
++		cublasScopy(N, &dinput[k * N], 1, &dT[k * N], 1);
++		a = 0.0;
++		for (j = 0; j < J; j++) {
++			cublasSgemv('t', N, N, 1.0, dinput, N, &dT[k * N], 1, 0.0, &doutput[k * N], 1);
++			if (k > 0) {
++				cublasSgemv('t', N, k, 1.0, doutput, N, &doutput[k * N], 1, 0.0, dU, 1);
++				cublasSgemv('n', N, k, -1.0, doutput, N, dU, 1, 1.0, &doutput[k * N], 1);
++			}
++			cublasSscal(N, 1.0 / cublasSnrm2(N, &doutput[k * N], 1), &doutput[k * N], 1);
++			cublasSgemv('n', N, N, 1.0, dinput, N, &doutput[k * N], 1, 0.0, &dT[k * N], 1);
++			if (k > 0) {
++				cublasSgemv('t', N, k, 1.0, dT, N, &dT[k * N], 1, 0.0, dU, 1);
++				cublasSgemv('n', N, k, -1.0, dT, N, dU, 1, 1.0, &dT[k * N], 1);
++			}
++			eValues[k] = cublasSnrm2(N, &dT[k * N], 1);
++			cublasSscal(N, 1.0 / eValues[k], &dT[k * N], 1);
++			if (fabs(a - eValues[k]) < er * eValues[k]) break;
++			a = eValues[k];
++		}
++		cublasSger(N, N, -eValues[k], &dT[k * N], 1, &doutput[k * N], 1, dinput, N);
++	}
++	for (k = 0; k < N; k++) {
++		cublasSscal(N, eValues[k], &dT[k * N], 1);
++	}
++	cublasGetMatrix(N, N, sizeof (doutput[0]), doutput, N, output, N);
++	status = cublasFree(doutput);
++	status = cublasFree(dT);
++	return EXIT_SUCCESS;
++}
+Index: gs.h
+===================================================================
+--- gs.h	(wersja 0)
++++ gs.h	(wersja 0)
+@@ -0,0 +1,14 @@
++/**
++ * @file gs.h
++ *
++ * @author Kamil Balwierz
++ */
++
++#ifndef GS_H_
++#define GS_H_
++
++#include "klt.h"
++
++int gram_schmidt(int N, type_data* output, type_data *dinput, type_data* eValues);
++
++#endif
+Index: adjust.cu
+===================================================================
+--- adjust.cu	(wersja 0)
++++ adjust.cu	(wersja 0)
+@@ -0,0 +1,17 @@
++#include "adjust.h"
++
++void adjust_pca_data(type_data* transformationMatrix, uint8_t forward, type_data* input, type_data* output, int componentCount, int componentLength) {
++	cublasSgemm((forward==1)?'t':'n', 'n', (forward==1)?componentCount:componentLength, 1, (forward==1)?componentLength:componentCount, 1, transformationMatrix, forward==1?componentLength:componentCount, input, (forward==1)?componentLength:componentCount, 0, output, (forward==1)?componentCount:componentLength);
++}
++
++__global__ void readSampleSimple(type_data** data, int sample_num, type_data* sample) {
++	sample[threadIdx.x] = data[threadIdx.x][sample_num];
++}
++
++__global__ void writeSampleSimple(type_data** data, int sample_num, type_data* sample) {
++	data[threadIdx.x][sample_num] = sample[threadIdx.x];
++}
++
++__global__ void writeSampleWithSum(type_data** data, int sample_num, type_data* sample, type_data* means) {
++	data[threadIdx.x][sample_num] = sample[threadIdx.x] + means[threadIdx.x];
++}
+Index: adjust.h
+===================================================================
+--- adjust.h	(wersja 0)
++++ adjust.h	(wersja 0)
+@@ -0,0 +1,7 @@
++#include "klt.h"
++
++void adjust_pca_data(type_data* transformationMatrix, uint8_t forward, type_data* input, type_data* output, int componentCount, int componentLength);
++
++__global__ void readSampleSimple(type_data** data, int sample_num, type_data* sample);
++__global__ void writeSampleSimple(type_data** data, int sample_num, type_data* sample);
++__global__ void writeSampleWithSum(type_data** data, int sample_num, type_data* sample, type_data* means);
+Index: klt.cu
+===================================================================
+--- klt.cu	(wersja 0)
++++ klt.cu	(wersja 0)
+@@ -0,0 +1,257 @@
++extern "C" {
++#include "klt.h"
++}
++#include "gs.h"
++#include "analysis.h"
++#include "adjust.h"
++#include <time.h>
++
++void encode_klt(type_parameters *param, type_image *img) {
++	clock_t start = clock();
++	type_data** data_pd;
++	
++	cudaMalloc(&data_pd, sizeof(type_data*)*img->num_components);
++	type_data** data_p = (type_data**)calloc(img->num_components, sizeof(type_data*));
++	for(int g=0; g<img->num_components; ++g) {
++		data_p[g] = img->tile[0].tile_comp[g].img_data_d;
++	}
++	cudaMemcpy(data_pd, data_p, sizeof(type_data*)*img->num_components, cudaMemcpyHostToDevice);
++
++	type_data* means_d;
++	cudaMalloc(&means_d, sizeof(type_data)*img->num_components);
++	mean_adjust_data<<< 1,img->num_components >>>(data_pd, means_d, img->width*img->height);
++	type_data* means = (type_data*)malloc(img->num_components * sizeof(type_data));
++	cudaMemcpy(means, means_d, sizeof(type_data)*img->num_components, cudaMemcpyDeviceToHost);
++	cudaFree(means_d);
++	
++	type_data* covMatrix_d;
++	cudaMalloc(&covMatrix_d, sizeof(type_data)*img->num_components*img->num_components);
++
++	calculate_covariance_matrix<<<img->num_components, img->num_components>>>(data_pd, covMatrix_d, img->width*img->height, img->num_components);
++
++	type_data* eValues = (type_data*)calloc(img->num_components, sizeof(type_data)); // alloc
++	type_data* output = (type_data*)calloc(img->num_components * img->num_components, sizeof(type_data)); // 
++
++	cublasStatus status;
++	status = cublasInit();
++	if (status != CUBLAS_STATUS_SUCCESS) {
++		fprintf(stderr, "! CUBLAS initialization error\n");
++		return;
++	}
++   
++	clock_t gs_start = clock();
++	gram_schmidt(img->num_components ,output, covMatrix_d, eValues);
++	printf("\nTime of GS %f\n", ((double)clock() - gs_start)/ CLOCKS_PER_SEC);
++	
++	int i,odciecie = 0;
++	i = img->num_components - 1;
++	odciecie = 0;
++	while(eValues[i] <= param->param_mct_klt_border_eigenvalue) {
++		++odciecie;
++		--i;
++		if(i==0)
++			break;
++	}
++
++	type_data* transform = (type_data*)malloc(img->num_components * (img->num_components - odciecie) * sizeof(type_data));
++	for(i=0; i<img->num_components; ++i) {
++		for(int j=0; j<img->num_components - odciecie; ++j) {
++			transform[i * (img->num_components - odciecie) + j] = output[i * img->num_components + j];
++		}
++	}
++
++	type_data* transform_d;
++	cudaMalloc(&transform_d, sizeof(type_data)*img->num_components*(img->num_components - odciecie));
++	cudaMemcpy(transform_d, transform, sizeof(type_data*)*img->num_components*(img->num_components - odciecie), cudaMemcpyHostToDevice);
++
++	type_data* data_d;
++	type_data* inter_d;
++
++	for(i=0; i<img->width*img->height; ++i) {
++		readSampleSimple<<<1,img->num_components>>>(data_pd, i, data_d);
++		adjust_pca_data(transform_d, 1, data_d, inter_d, img->num_components - odciecie, img->num_components);
++		writeSampleSimple<<<1,img->num_components-odciecie>>>(data_pd, i, inter_d);
++	}
++
++	status = cublasShutdown();
++	if (status != CUBLAS_STATUS_SUCCESS) {
++		fprintf(stderr, "! cublas shutdown error\n");
++		return;
++	}
++
++//			free(img->tile[i].tile_comp[k].img_data);
++//			free(&img->tile[i].tile_comp[k]);
++
++	type_mct* mct_matrix = (type_mct*)calloc(1,sizeof(type_mct));
++	type_mct* mct_offset = (type_mct*)calloc(1,sizeof(type_mct));
++	
++	mct_offset->index = 0;
++	mct_offset->type = MCT_DECORRELATION_OFFSET;
++	mct_offset->element_type = MCT_32BIT_FLOAT;
++	mct_offset->length = img->num_components;
++	mct_offset->data = (uint8_t*)means;
++
++	mct_matrix->index = 0;
++	mct_matrix->type = MCT_DECORRELATION_TRANSFORMATION;
++	mct_matrix->element_type = MCT_32BIT_FLOAT;
++	mct_matrix->length = img->num_components * (img->num_components - odciecie);
++	mct_matrix->data = (uint8_t*)transform;
++
++	
++	type_mcc* mcc = (type_mcc*)calloc(1, sizeof(type_mcc));
++	mcc->index = 0;
++	mcc->count = 1;
++	mcc->data = (type_mcc_data*)calloc(1,sizeof(type_mcc_data));
++	
++	mcc->data->type = MCC_MATRIX_BASED;
++	mcc->data->input_count = img->num_components;
++	mcc->data->input_component_type = img->num_components>0x3FFF?MCT_16BIT_INT:MCT_8BIT_INT;
++//	mcc->data->output_count = img->num_components - odciecie;
++	mcc->data->output_count = img->num_components;
++	mcc->data->output_component_type = img->num_components>0x3FFF?MCT_16BIT_INT:MCT_8BIT_INT;
++	mcc->data->decorrelation_transform_matrix = 0;
++	mcc->data->deccorelation_transform_offset = 0;
++	
++	if(img->num_components > 0x3FFF) {
++		mcc->data->input_components = (uint8_t*)calloc(img->num_components, sizeof(uint16_t));
++		mcc->data->output_components = (uint8_t*)calloc(img->num_components, sizeof(uint16_t));
++//		mcc->data->output_components = (uint8_t*)calloc(img->num_components - odciecie, sizeof(uint16_t));
++		uint16_t* ins = (uint16_t*)mcc->data->input_components;
++		uint16_t* outs = (uint16_t*)mcc->data->output_components;
++		for(i=0; i<img->num_components; ++i) {
++			outs[i] = i;
++			if(i < img->num_components - odciecie) {
++				ins[i] = i;
++			}
++		}
++	} else {
++		mcc->data->input_components = (uint8_t*)calloc(img->num_components, sizeof(uint8_t));
++//		mcc->data->output_components = (uint8_t*)calloc(img->num_components - odciecie, sizeof(uint8_t));
++		mcc->data->output_components = (uint8_t*)calloc(img->num_components, sizeof(uint8_t));
++		for(i=0; i<img->num_components; ++i) {
++			mcc->data->output_components[i] = i;
++//			if(i < img->num_components - odciecie) {
++				mcc->data->input_components[i] = i;
++//			}
++		}
++	}
++	
++	img->mct_data->mccs_count = 1;
++	img->mct_data->mccs = mcc;
++	img->mct_data->mcts[MCT_DECORRELATION_TRANSFORMATION] = mct_matrix;
++	img->mct_data->mcts_count[MCT_DECORRELATION_TRANSFORMATION] = 1;
++	img->mct_data->mcts[MCT_DECORRELATION_OFFSET] = mct_offset;
++	img->mct_data->mcts_count[MCT_DECORRELATION_OFFSET] = 1;
++
++
++//	img->num_components -= odciecie; 
++	printf("\nTime of MCT processing %f\n", ((double)clock() - start)/ CLOCKS_PER_SEC);
++	printf("MCT %d components droped\n", odciecie);
++}
++
++void decode_tile_mcc(type_mcc_data* mcc, type_tile* tile, type_image* img) {
++
++	type_mct* mct_matrix;
++	type_mct* mct_offset;
++
++	int i;
++	for(i=0; img->mct_data->mcts_count[MCT_DECORRELATION_TRANSFORMATION]; ++i) {
++		mct_matrix = img->mct_data->mcts[MCT_DECORRELATION_TRANSFORMATION];
++		if(mct_matrix->index == mcc->decorrelation_transform_matrix)
++			break;
++	}
++
++	for(i=0; img->mct_data->mcts_count[MCT_DECORRELATION_OFFSET]; ++i) {
++		mct_offset = img->mct_data->mcts[MCT_DECORRELATION_OFFSET];
++		if(mct_offset->index == mcc->deccorelation_transform_offset)
++			break;
++	}
++
++	int j=0, k=0;
++	type_data* matrix = (type_data*)malloc(sizeof(type_data)*mct_matrix->length);
++	type_data* off  = (type_data*)malloc(sizeof(type_data)*mct_offset->length);
++	type_data* matrix_d;
++	type_data* off_d;
++	cudaMalloc(&matrix_d, sizeof(type_data)*mct_matrix->length);
++	cudaMalloc(&off_d, sizeof(type_data)*mct_offset->length);
++	cudaMemcpy(matrix_d, matrix, sizeof(type_data)*mct_matrix->length, cudaMemcpyHostToDevice);
++	cudaMemcpy(off_d, off, sizeof(type_data)*mct_offset->length, cudaMemcpyHostToDevice);
++
++	for(i=0; i<mct_matrix->length; ++i) {
++		if(++j==mcc->output_count) {
++			j=0;
++			++k;
++		}
++		switch(mct_matrix->element_type) {
++			case MCT_8BIT_INT:
++				matrix[k * mcc->output_count + j] = (type_data) ((uint8_t*)mct_matrix->data)[i]; break;
++			case MCT_16BIT_INT:
++				matrix[k * mcc->output_count + j] = (type_data)((uint16_t*)mct_matrix->data)[i]; break;
++			case MCT_32BIT_FLOAT:
++				matrix[k * mcc->output_count + j] = (type_data)((float*)mct_matrix->data)[i]; break;
++			case MCT_64BIT_DOUBLE:
++				matrix[k * mcc->output_count + j] = (type_data)((double*)mct_matrix->data)[i]; break;
++		}
++	}
++
++	for(k=0; k<mcc->output_count; ++k) {
++		switch(mct_offset->element_type) {
++			case MCT_8BIT_INT:
++				off[k] = (type_data)((uint8_t *)mct_offset->data)[k]; break;
++			case MCT_16BIT_INT:
++				off[k] = (type_data)((uint16_t *)mct_offset->data)[k]; break;
++			case MCT_32BIT_FLOAT:
++				off[k] = (type_data)((float *)mct_offset->data)[k]; break;
++			case MCT_64BIT_DOUBLE:
++				off[k] = (type_data)((double *)mct_offset->data)[k]; break;
++		}
++	}
++
++	type_data* data_d;
++	type_data* inter_d;
++	cudaMalloc(&inter_d, sizeof(type_data)*mcc->input_count);
++	cudaMalloc(&data_d, sizeof(type_data)*mcc->output_count);
++
++	type_data** components_out_p = (type_data**)calloc(mcc->output_count,sizeof(type_data*));
++	type_data** components_out_pd;
++	cudaMalloc(&components_out_pd, mcc->output_count*sizeof(type_data*));
++
++	for(k=0; k < mcc->output_count; ++k) {
++		components_out_p[k] = img->tile[0].tile_comp[mcc->output_components[k]].img_data_d;
++	}
++	cudaMemcpy(components_out_pd, components_out_p, sizeof(type_data*)*mcc->output_count, cudaMemcpyHostToDevice);
++
++	type_data** components_in_p = (type_data**)calloc(mcc->input_count,sizeof(type_data*));
++	type_data** components_in_pd;
++	cudaMalloc(&components_in_pd, mcc->input_count*sizeof(type_data*));
++
++	for(k=0; k < mcc->input_count; ++k) {
++		components_in_p[k] = img->tile[0].tile_comp[mcc->input_components[k]].img_data_d;
++	}
++	cudaMemcpy(components_in_pd, components_in_p, sizeof(type_data*)*mcc->input_count, cudaMemcpyHostToDevice);
++
++	for(j=0; j<img->tile[0].width * img->tile[0].height; ++j) {
++		readSampleSimple<<<1,mcc->input_count>>>(components_in_pd, j, inter_d);
++		adjust_pca_data(matrix_d, 0, inter_d, data_d, mcc->input_count, mcc->output_count);
++		writeSampleWithSum<<<1,mcc->output_count>>>(components_out_pd, j, data_d, off_d);
++	}
++}
++
++void decode_klt(type_image *img) {
++	int i,j,k;
++	type_mcc* mcc;
++	type_mcc_data* mcc_data;
++	for(i=0; i<img->mct_data->mccs_count; ++i) {
++		mcc = &img->mct_data->mccs[i];
++		for(j=0; j<mcc->count;++j) {
++			mcc_data = &mcc->data[j];
++			if(mcc_data->type == MCC_MATRIX_BASED) {
++				for(k=0; k<img->num_tiles; ++k) {
++					// TODO: check for tile scecific modifications of MCC (not supported)
++					decode_tile_mcc(mcc_data, &img->tile[k],img);
++				}
++			}
++		}
++	}
++}
++
+Index: klt.h
+===================================================================
+--- klt.h	(wersja 0)
++++ klt.h	(wersja 0)
+@@ -0,0 +1,12 @@
++#ifndef KLT_H_
++#define KLT_H_
++
++#include "../types/image_types.h"
++#include "../config/parameters.h"
++#include <cublas.h>
++
++
++void encode_klt(type_parameters *param, type_image *img);
++void decode_klt(type_image *img);
++
++#endif
+Index: analysis.cu
+===================================================================
+--- analysis.cu	(wersja 0)
++++ analysis.cu	(wersja 0)
+@@ -0,0 +1,36 @@
++#include "analysis.h"
++#include <stdlib.h>
++
++__device__ type_data calculate_mean(type_data* data, unsigned int count) {
++	type_data sum = 0.0;
++	int j;
++	for(j=0; j<count; ++j) {
++		sum += data[j];
++	}
++	for(j=0; j<count; ++j) {
++		data[j] -= (type_data)sum/(type_data)count;
++	}
++	return sum/(type_data)count;
++}
++
++
++__global__ void mean_adjust_data(type_data** data, type_data* means, int count) {
++	means[threadIdx.x] = calculate_mean(data[threadIdx.x], count);
++}
++
++__device__ type_data calculate_covariance(type_data* firstComponent, type_data* secondComponent, int count) {
++	type_data sum = 0.0;
++	for(int j=0; j<count; ++j) {
++		sum += firstComponent[j]*secondComponent[j];
++	}
++	return sum/(type_data)count;
++}
++
++__global__ void calculate_covariance_matrix(type_data** data, type_data* covMatrix, int count, int dim) {
++	int i = threadIdx.x;
++	int j = blockIdx.x;
++	if(j<i) return;
++
++	covMatrix[i * dim + j] = calculate_covariance(data[i], data[j], count);
++	covMatrix[j * dim + i] = covMatrix[i * dim + j];
++}
+Index: analysis.h
+===================================================================
+--- analysis.h	(wersja 0)
++++ analysis.h	(wersja 0)
+@@ -0,0 +1,10 @@
++#ifndef ANALYSIS_H_
++#define ANALYSIS_H_
++
++#include "../types/image_types.h"
++#include "klt.h"
++
++void __global__ calculate_covariance_matrix(type_data** data, type_data* covMatrix, int count, int dim);
++void __global__ mean_adjust_data(type_data** data, type_data* means, int count);
++
++#endif
+Index: CMakeLists.txt
+===================================================================
+--- CMakeLists.txt	(wersja 0)
++++ CMakeLists.txt	(wersja 0)
+@@ -0,0 +1,16 @@
++set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS})
++SET(CMAKE_CXX_FLAGS -g)
++SET(CMAKE_CC_FLAGS -g)
++
++cuda_add_library(klt
++	klt.cu
++	gs.cu
++	analysis.cu
++	adjust.cu
++)
++
++target_link_libraries(klt
++	m
++)
++
++cuda_add_cublas_to_target(klt)
