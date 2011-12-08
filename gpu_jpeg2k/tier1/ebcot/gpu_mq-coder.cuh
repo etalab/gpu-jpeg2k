@@ -17,6 +17,7 @@ struct MQEncoder
 	byte CT;
 	byte T;
 
+	// temporary save here decision and context
 	byte *outbuf;
 
 	int CXMPS;
@@ -28,6 +29,9 @@ struct MQEncoder
 	unsigned int Ib3;
 	unsigned int Ib4;
 	unsigned int Ib5;
+
+	// output decision and context
+	unsigned int dcx_id;
 };
 
 struct MQDecoder : public MQEncoder
@@ -106,12 +110,13 @@ __device__ void mqResetDec(MQDecoder &decoder)
 
 __device__ void mqInitEnc(MQEncoder &encoder, byte *outbuf)
 {
-	encoder.A = 0x8000;
+/*	encoder.A = 0x8000;
 	encoder.C = 0;
 	encoder.CT = 12;
-	encoder.L = -1;
+	encoder.L = -1;*/
+	encoder.dcx_id = 0;
 	encoder.outbuf = outbuf;
-	encoder.T = 0;
+//	encoder.T = 0;
 }
 
 //#define BYTEOUT_OPTIMIZED
@@ -311,9 +316,10 @@ __device__ int calcFmin(MQEncoder &encoder)
 
 __device__ int mqFullFlush(MQEncoder &encoder)
 {
-	int Fmin = calcFmin(encoder);
+//	int Fmin = calcFmin(encoder);
 	
-	return Fmin + encoder.L;
+//	return Fmin + encoder.L;
+	return encoder.dcx_id;
 }
 
 __device__ void mqEncode(MQEncoder &encoder, int decision, int context)
@@ -326,12 +332,14 @@ __device__ void mqEncode(MQEncoder &encoder, int decision, int context)
 	/* */
 	#endif
 	
-	encoder.CX = context;
-	
+	encoder.outbuf[encoder.dcx_id++] = (unsigned char)((decision << 5) | context);
+
+/*	encoder.CX = context;
+
 	if(decision == GetNthBit(encoder.CXMPS, encoder.CX))
 		codemps(encoder);
 	else
-		codelps(encoder);
+		codelps(encoder);*/
 }
 
 __device__ void bytein(MQDecoder &decoder)

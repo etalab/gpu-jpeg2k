@@ -50,6 +50,13 @@ extern "C" {
 
 #define CHECK_ERRORS(stmt) CHECK_ERRORS_WITH_SYNC(stmt)
 
+void print_cdx(EntropyCodingTaskInfo *infos, int codeBlocks) {
+	for(int i = 0; i < codeBlocks; i++)
+	{
+		printf("%d) %d\n", i, infos[i].length);
+	}
+}
+
 float gpuEncode(EntropyCodingTaskInfo *infos, int count, int targetSize)
 {
 	int codeBlocks = count;
@@ -133,6 +140,8 @@ float gpuEncode(EntropyCodingTaskInfo *infos, int count, int targetSize)
 			infos[i].codeStream = NULL;
 		}
 	}
+
+//	print_cdx(infos, codeBlocks);
 
 	cuda_d_free(d_outbuf);
 	cuda_d_free(d_stBuffors);

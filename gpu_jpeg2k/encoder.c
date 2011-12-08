@@ -34,8 +34,8 @@
 #include "tier2/codestream.h"
 #include "tier2/write_codestream.h"
 
-#define GLOBAL_TIME
-//#define PART_TIME
+//#define GLOBAL_TIME
+#define PART_TIME
 
 /**
  * @brief Main program entrance.
@@ -137,7 +137,7 @@ int main(int argc, char **argv)
 	start_coder = start_measure();
 #endif
 
-		encode_tile(tile, 0);
+		encode_tile(tile);
 
 #ifdef PART_TIME
 	cudaThreadSynchronize();

@@ -8,6 +8,7 @@
 
 typedef struct
 {
+	// temporary cdx length
 	int length;
 	unsigned char significantBits;
 	unsigned char codingPasses;

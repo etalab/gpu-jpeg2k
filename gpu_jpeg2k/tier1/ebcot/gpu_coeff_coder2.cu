@@ -704,7 +704,7 @@ __device__ void encode(CoefficientState *coeffs, byte *out, CodeBlockAdditionalI
 
 	if(info.significantBits > 0)
 	{
-		mqResetEnc(mqenc);
+//		mqResetEnc(mqenc);
 		
 		initCoeffs(info, coeffs);
 		

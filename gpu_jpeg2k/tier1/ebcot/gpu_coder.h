@@ -9,7 +9,7 @@
 #define __shared__
 #endif
 
-#define MAX_CODESTREAM_SIZE (4096 * 2) /// TODO: figure out
+#define MAX_CODESTREAM_SIZE (4096 * 6) /// TODO: figure out
 
 #define LL_LH_SUBBAND	0
 #define HL_SUBBAND		1
