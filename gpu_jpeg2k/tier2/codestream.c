@@ -893,7 +893,7 @@ void encode_packet_body(type_buffer *buffer, type_res_lvl *res_lvl)
 		for (j = 0; j < sb->num_cblks; j++) {
 			cblk = &(sb->cblks[j]);
 			//TODO
-//			println_var(INFO, "%d", cblk->length);
+//			println_var(INFO, "%d) %d", cblk->cblk_no, cblk->length);
 			sum_size += cblk->length;
 			write_array(buffer, cblk->codestream, cblk->length);
 		}

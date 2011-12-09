@@ -411,7 +411,7 @@ public:
 				if((window.c >> (3 * k)) & 1) // check if magnitude is 1
 				{
 					*sum_dist -= (float)((1<<bitplane)*(1<<bitplane));
-					debug_print(sum_dist, threadIdx.x);
+//					debug_print(sum_dist, threadIdx.x);
 //					if(blockIdx.x * blockDim.x + threadIdx.x == 0)
 //					printf("clu:%f tid:%d\n", *sum_dist, blockIdx.x * blockDim.x + threadIdx.x);
 					SetNthBit(window.c, 1 + 3 * k); // set k-th significant state
@@ -446,7 +446,7 @@ __device__ void operator()(const CodeBlockAdditionalInfo &info, CtxWindow &windo
 			if((window.c >> (3 * i)) & 1)
 			{
 				*sum_dist -= (float)((1<<bitplane)*(1<<bitplane));
-				debug_print(sum_dist, threadIdx.x);
+//				debug_print(sum_dist, threadIdx.x);
 //				if(blockIdx.x * blockDim.x + threadIdx.x == 0)
 //				printf("sig:%f tid:%d\n", *sum_dist, blockIdx.x * blockDim.x + threadIdx.x);
 				SetNthBit(window.c, 1 + (3 * i));
@@ -492,7 +492,7 @@ __device__ void operator()(const CodeBlockAdditionalInfo &info, CtxWindow &windo
 			((window.c >> (3 * i)) & 0x4006) == 0x2)
 		{
 			*sum_dist -= (float)((1<<bitplane)*(1<<bitplane));
-			debug_print(sum_dist, threadIdx.x);
+//			debug_print(sum_dist, threadIdx.x);
 //			if(blockIdx.x * blockDim.x + threadIdx.x == 0)
 //			printf("mgr:%f tid:%d\n", *sum_dist, blockIdx.x * blockDim.x + threadIdx.x);
 			MagRefCodingFunctor()(mq, window, i);
@@ -673,7 +673,7 @@ public:
 };
 
 template <class PostPassFunctor, class PostCodingFunctor>
-__device__ void encode(CoefficientState *coeffs, byte *out, CodeBlockAdditionalInfo &info, MQEncoder *states, PcrdCodeblock *pcrdCodeblock = NULL)
+__device__ void encode(CoefficientState *coeffs, byte *out, byte *cxd_pairs, CodeBlockAdditionalInfo &info, MQEncoder *states, PcrdCodeblock *pcrdCodeblock = NULL)
 {
 	unsigned char leastSignificantBP = 31 - info.magbits;
 
@@ -694,7 +694,7 @@ __device__ void encode(CoefficientState *coeffs, byte *out, CodeBlockAdditionalI
 		}
 
 	MQEncoder mqenc;
-	mqInitEnc(mqenc, out);
+	mqInitEnc(mqenc, out, cxd_pairs);
 				
 	unsigned char sid = 0;
 	float sum_dist = 0.0f;
@@ -704,7 +704,7 @@ __device__ void encode(CoefficientState *coeffs, byte *out, CodeBlockAdditionalI
 
 	if(info.significantBits > 0)
 	{
-//		mqResetEnc(mqenc);
+		mqResetEnc(mqenc);
 		
 		initCoeffs(info, coeffs);
 		
@@ -796,7 +796,7 @@ __device__ void decode(CoefficientState *coeffs, CodeBlockAdditionalInfo &info, 
 	}
 }
 
-__global__ void g_encode(CoefficientState *coeffBuffors, byte *outbuf, int maxThreadBufforLength, CodeBlockAdditionalInfo *infos, int codeBlocks, MQEncoder *mqstates)
+__global__ void g_encode(CoefficientState *coeffBuffors, byte *outbuf, byte *cxd_pairs, int maxThreadBufforLength, CodeBlockAdditionalInfo *infos, int codeBlocks, MQEncoder *mqstates)
 {
 	int threadId = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -806,7 +806,7 @@ __global__ void g_encode(CoefficientState *coeffBuffors, byte *outbuf, int maxTh
 	CodeBlockAdditionalInfo info = infos[threadId];
 
 	info.length = 0;
-	encode<PCRD_EmptyFunctor, CollectMQStatesFunctor>(coeffBuffors + info.magconOffset, outbuf + threadId * maxThreadBufforLength, info, mqstates + threadId);
+	encode<PCRD_EmptyFunctor, CollectMQStatesFunctor>(coeffBuffors + info.magconOffset, outbuf + threadId * maxThreadBufforLength, cxd_pairs + threadId * maxThreadBufforLength, info, mqstates + threadId);
 
 	infos[threadId].significantBits = info.significantBits;
 	infos[threadId].length = info.length;
@@ -822,7 +822,7 @@ __global__ void g_encode_pcrd(CoefficientState *coeffBuffors, byte *outbuf, int 
 	CodeBlockAdditionalInfo info = infos[threadId];
 
 	info.length = 0;
-	encode<PCRD_CollectMQStatesFunctor, PCRD_EmptyFunctor>(coeffBuffors + info.magconOffset, outbuf + threadId * maxThreadBufforLength, info, mqstates + threadId * maxStatesPerCodeblock, pcrdCodeblocks + threadId * maxStatesPerCodeblock);
+	encode<PCRD_CollectMQStatesFunctor, PCRD_EmptyFunctor>(coeffBuffors + info.magconOffset, outbuf + threadId * maxThreadBufforLength, NULL, info, mqstates + threadId * maxStatesPerCodeblock, pcrdCodeblocks + threadId * maxStatesPerCodeblock);
 
 	infos[threadId].significantBits = info.significantBits;
 	infos[threadId].length = info.length;
@@ -836,7 +836,8 @@ __global__ void g_lengthCalculation(CodeBlockAdditionalInfo *infos, int codeBloc
 		return;
 
 	if(infos[threadId].significantBits > 0) {
-		infos[threadId].length = mqFullFlush(mqstates[threadId]);
+//		infos[threadId].length = mqFullFlush(mqstates[threadId]);
+		infos[threadId].length = get_cxd_pairs_count(mqstates[threadId]);
 		infos[threadId].codingPasses = infos[threadId].significantBits * 3 -2;
 	}
 	else {
@@ -922,14 +923,14 @@ __global__ void g_decode(CoefficientState *coeffBuffors, byte *inbuf, int maxThr
 
 #include <stdio.h>
 
-void launch_encode(dim3 gridDim, dim3 blockDim, CoefficientState *coeffBuffors, byte *outbuf, int maxThreadBufforLength, CodeBlockAdditionalInfo *infos, int codeBlocks)
+void launch_encode(dim3 gridDim, dim3 blockDim, CoefficientState *coeffBuffors, byte *outbuf, byte *cxd_pairs, int maxThreadBufforLength, CodeBlockAdditionalInfo *infos, int codeBlocks)
 {
 	MQEncoder *mqstates;
 	cuda_d_allocate_mem((void **) &mqstates, sizeof(MQEncoder) * codeBlocks);
 
 //	printf("grid %d %d %d\nblock %d %d %d\n", gridDim.x, gridDim.y, gridDim.z, blockDim.x, blockDim.y, blockDim.z);
 
-	g_encode<<<gridDim, blockDim>>>(coeffBuffors, outbuf, maxThreadBufforLength, infos, codeBlocks, mqstates);
+	g_encode<<<gridDim, blockDim>>>(coeffBuffors, outbuf, cxd_pairs, maxThreadBufforLength, infos, codeBlocks, mqstates);
 
 	g_lengthCalculation<<<(int) ceil(codeBlocks / 512.0f), 512>>>(infos, codeBlocks, mqstates);
 

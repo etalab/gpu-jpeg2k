@@ -10,4 +10,5 @@ cuda_add_library(ebcot
 
 TARGET_LINK_LIBRARIES(ebcot 
 	misc
+	mqc
 )

@@ -27,6 +27,7 @@ extern "C" {
 
 #include "gpu_coeff_coder2.cuh"
 #include "coeff_coder_pcrd.cuh"
+#include "mqc/mqc_wrapper.h"
 
 //TODO: shouldn't those two methodes be moved to some more generic place, so that they can  be used by all CUDA calls?
 #define CHECK_ERRORS_WITH_SYNC(stmt) \
@@ -67,12 +68,14 @@ float gpuEncode(EntropyCodingTaskInfo *infos, int count, int targetSize)
 		n += infos[i].width * infos[i].height;
 
 	byte *d_outbuf;
+	byte *d_cxd_pairs;
 	GPU_JPEG2K::CoefficientState *d_stBuffors;
 
 	CodeBlockAdditionalInfo *h_infos = (CodeBlockAdditionalInfo *) malloc(sizeof(CodeBlockAdditionalInfo) * codeBlocks);
 	CodeBlockAdditionalInfo *d_infos;
 
 	cuda_d_allocate_mem((void **) &d_outbuf, sizeof(byte) * codeBlocks * maxOutLength);
+	cuda_d_allocate_mem((void **) &d_cxd_pairs, sizeof(byte) * codeBlocks * maxOutLength);
 	cuda_d_allocate_mem((void **) &d_infos, sizeof(CodeBlockAdditionalInfo) * codeBlocks);
 
 	int magconOffset = 0;
@@ -108,7 +111,7 @@ float gpuEncode(EntropyCodingTaskInfo *infos, int count, int targetSize)
 	if(targetSize == 0)
 	{
 		//printf("No pcrd\n");
-		CHECK_ERRORS(GPU_JPEG2K::launch_encode((int) ceil((float) codeBlocks / THREADS), THREADS, d_stBuffors, d_outbuf, maxOutLength, d_infos, codeBlocks));
+		CHECK_ERRORS(GPU_JPEG2K::launch_encode((int) ceil((float) codeBlocks / THREADS), THREADS, d_stBuffors, d_outbuf, d_cxd_pairs, maxOutLength, d_infos, codeBlocks));
 	}
 	else
 	{
@@ -120,12 +123,14 @@ float gpuEncode(EntropyCodingTaskInfo *infos, int count, int targetSize)
 
 	cuda_memcpy_dth(d_infos, h_infos, sizeof(CodeBlockAdditionalInfo) * codeBlocks);
 
+	mqc_gpu_encode(infos, h_infos, codeBlocks, d_cxd_pairs, maxOutLength);
+
 	for(int i = 0; i < codeBlocks; i++)
 	{
 		infos[i].significantBits = h_infos[i].significantBits;
 		infos[i].codingPasses = h_infos[i].codingPasses;
 
-		if(h_infos[i].length > 0)
+		/*if(h_infos[i].length > 0)
 		{
 			infos[i].length = h_infos[i].length;
 
@@ -138,7 +143,7 @@ float gpuEncode(EntropyCodingTaskInfo *infos, int count, int targetSize)
 		{
 			infos[i].length = 0;
 			infos[i].codeStream = NULL;
-		}
+		}*/
 	}
 
 //	print_cdx(infos, codeBlocks);
@@ -312,6 +317,19 @@ void encode_tasks_serial(type_tile *tile) {
 	}
 
 	free(tasks);
+}
+
+void encode_tasks_test() {
+/*	char file_name[128];
+	sprintf(file_name, "/home/miloszc/Projects/images/rgb8bit/flower_foveon.ppm\0");
+	struct mqc_data* mqc_data = mqc_data_create_from_image(file_name);
+	if(mqc_data == 0) {
+		std::cerr << "Can't receive data from openjpeg: " << std::endl;
+		return;
+	}
+
+	// Initialize CUDA
+	cudaError cuerr = cudaSuccess;*/
 }
 
 void encode_tile(type_tile *tile)

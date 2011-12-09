@@ -16,6 +16,8 @@ include_directories(${FREEIMAGE_INCLUDE_PATH})
 
 add_subdirectory(tier1/coeff_coder)
 add_subdirectory(tier1/ebcot)
+add_subdirectory(tier1/ebcot/mqc)
+add_subdirectory(tier1/ebcot/mqc/library/openjpeg)
 add_subdirectory(config)
 add_subdirectory(dwt)
 add_subdirectory(preprocessing)
@@ -33,7 +35,8 @@ encoder.c)
 
 TARGET_LINK_LIBRARIES( encoder 
 ${FREEIMAGE_LIBRARY} 
-m 
+m
+#gpu_coeff_coder 
 ebcot
 config
 dwt
