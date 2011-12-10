@@ -11,6 +11,7 @@ extern"C" {
 //#include "dwt/dbg_iwt_1d.h"
 }
 
+#include "tier1/ebcot/test_gpu_coeff_coder.h"
 
 int main(int argc, char **argv)
 {
@@ -19,6 +20,7 @@ int main(int argc, char **argv)
 //	dbg_fiwt_1d();
 //	dbg_wt();
 //	dbg_quantization();
+	encode_tasks_test();
 
 	return 0;
 }

@@ -1211,7 +1211,7 @@ static void t1_encode_cblk(
 	cblk->numbps = max ? (int_floorlog2(max) + 1) - T1_NMSEDEC_FRACBITS : 0;
 	
 	bpno = cblk->numbps - 1;
-	printf("bpno %d\n", bpno);
+//	printf("bpno %d\n", bpno);
 	passtype = 2;
 	
 	mqc_resetstates(mqc);

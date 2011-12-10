@@ -29,28 +29,6 @@ extern "C" {
 #include "coeff_coder_pcrd.cuh"
 #include "mqc/mqc_wrapper.h"
 
-//TODO: shouldn't those two methodes be moved to some more generic place, so that they can  be used by all CUDA calls?
-#define CHECK_ERRORS_WITH_SYNC(stmt) \
-		stmt; \
-		{ \
-		cudaThreadSynchronize(); \
-\
-		cudaError_t error; \
-		if(error = cudaGetLastError()) \
-			std::cout << "Error in " << __FILE__ << " at " << __LINE__ << " line: " << cudaGetErrorString(error) << std::endl; \
-		};
-
-#define CHECK_ERRORS_WITHOUT_SYNC(stmt) \
-		stmt; \
-		{ \
-\
-		cudaError_t error; \
-		if(error = cudaGetLastError()) \
-			std::cout << "Error in " << __FILE__ << " at " << __LINE__ << " line: " << cudaGetErrorString(error) << std::endl; \
-		};
-
-#define CHECK_ERRORS(stmt) CHECK_ERRORS_WITH_SYNC(stmt)
-
 void print_cdx(EntropyCodingTaskInfo *infos, int codeBlocks) {
 	for(int i = 0; i < codeBlocks; i++)
 	{
@@ -317,19 +295,6 @@ void encode_tasks_serial(type_tile *tile) {
 	}
 
 	free(tasks);
-}
-
-void encode_tasks_test() {
-/*	char file_name[128];
-	sprintf(file_name, "/home/miloszc/Projects/images/rgb8bit/flower_foveon.ppm\0");
-	struct mqc_data* mqc_data = mqc_data_create_from_image(file_name);
-	if(mqc_data == 0) {
-		std::cerr << "Can't receive data from openjpeg: " << std::endl;
-		return;
-	}
-
-	// Initialize CUDA
-	cudaError cuerr = cudaSuccess;*/
 }
 
 void encode_tile(type_tile *tile)

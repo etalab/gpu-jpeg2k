@@ -27,6 +27,27 @@ typedef struct
 	int* coefficients;
 } CodeBlockAdditionalInfo;
 
+#define CHECK_ERRORS_WITH_SYNC(stmt) \
+		stmt; \
+		{ \
+		cudaThreadSynchronize(); \
+\
+		cudaError_t error; \
+		if(error = cudaGetLastError()) \
+			std::cout << "Error in " << __FILE__ << " at " << __LINE__ << " line: " << cudaGetErrorString(error) << std::endl; \
+		};
+
+#define CHECK_ERRORS_WITHOUT_SYNC(stmt) \
+		stmt; \
+		{ \
+\
+		cudaError_t error; \
+		if(error = cudaGetLastError()) \
+			std::cout << "Error in " << __FILE__ << " at " << __LINE__ << " line: " << cudaGetErrorString(error) << std::endl; \
+		};
+
+#define CHECK_ERRORS(stmt) CHECK_ERRORS_WITH_SYNC(stmt)
+
 namespace GPU_JPEG2K
 {
 	typedef unsigned int CoefficientState;
