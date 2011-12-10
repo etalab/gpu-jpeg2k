@@ -20,6 +20,17 @@ extern "C" {
 #include "gpu_coder.h"
 #include "gpu_coeff_coder2.cuh"
 
+void binary_printf(unsigned int in)
+{
+	for(int i = 0; i < 32; i++)
+		if((in >> (31 - i)) & 1)
+			printf("1");
+		else
+			printf("0");
+
+	printf("\n");
+}
+
 void encode_tasks_test() {
 	char file_name[128];
 	sprintf(file_name, "/home/aurox/Projects/workspace/images/rgb8bit/flower_foveon.ppm\0");
@@ -55,6 +66,7 @@ void encode_tasks_test() {
 
 	for (int i = 0; i < codeBlocks; i++) {
 		struct mqc_data_cblk *cblk = mqc_data->cblks[i];
+//		binary_printf(cblk->coefficients[0]);
 		h_infos[i].width = cblk->w;
 		h_infos[i].height = cblk->h;
 		h_infos[i].nominalWidth = cblk->w;
@@ -62,16 +74,18 @@ void encode_tasks_test() {
 		h_infos[i].subband = cblk->subband;
 		h_infos[i].magconOffset = magconOffset + cblk->w;
 		h_infos[i].magbits = cblk->magbits;
-		h_infos[i].coefficients = cblk->coefficients;
+		cuda_d_allocate_mem((void **)&h_infos[i].coefficients, h_infos[i].width * h_infos[i].height * sizeof(int));
+		cuda_memcpy_htd(cblk->coefficients, h_infos[i].coefficients, h_infos[i].width * h_infos[i].height * sizeof(int));
+//		h_infos[i].coefficients = cblk->coefficients;
 		h_infos[i].compType = cblk->compType;
 		h_infos[i].dwtLevel = cblk->dwtLevel;
 		h_infos[i].stepSize = cblk->stepSize;
 
 		magconOffset += h_infos[i].width * (h_infos[i].stripeNo + 2);
 
-//		printf("%d %d %d %d %d %d %d %d %d %f\n", h_infos[i].width, h_infos[i].height, h_infos[i].nominalWidth,
-//				h_infos[i].stripeNo, h_infos[i].subband, h_infos[i].magconOffset, h_infos[i].magbits,
-//				h_infos[i].compType, h_infos[i].dwtLevel, h_infos[i].stepSize);
+		printf("%d %d %d %d %d %d %d %d %d %f\n", h_infos[i].width, h_infos[i].height, h_infos[i].nominalWidth,
+				h_infos[i].stripeNo, h_infos[i].subband, h_infos[i].magconOffset, h_infos[i].magbits,
+				h_infos[i].compType, h_infos[i].dwtLevel, h_infos[i].stepSize);
 	}
 
 	cuda_d_allocate_mem((void **) &d_stBuffors, sizeof(GPU_JPEG2K::CoefficientState) * magconOffset);

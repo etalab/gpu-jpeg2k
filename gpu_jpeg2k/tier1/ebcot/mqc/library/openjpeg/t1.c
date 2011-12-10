@@ -1188,12 +1188,6 @@ static void t1_encode_cblk(
 {
 	double cumwmsedec = 0.0;
 
-#ifndef _DATA_HOOK_DISABLED
-    // Hook cblk begin
-    if ( _mqc_callback_cblk_begin != 0 )
-        _mqc_callback_cblk_begin(t1->w, t1->h, t1->data, orient, qmfbid, level, stepsize, _mqc_callback_cblk_begin_param);
-#endif
-
 	opj_mqc_t *mqc = t1->mqc;	/* MQC component */
 
 	int passno, bpno, passtype;
@@ -1210,8 +1204,15 @@ static void t1_encode_cblk(
 
 	cblk->numbps = max ? (int_floorlog2(max) + 1) - T1_NMSEDEC_FRACBITS : 0;
 	
+#ifndef _DATA_HOOK_DISABLED
+    // Hook cblk begin
+    if ( _mqc_callback_cblk_begin != 0 )
+        _mqc_callback_cblk_begin(t1->w, t1->h, t1->data, cblk->numbps, orient, qmfbid, level, stepsize, _mqc_callback_cblk_begin_param);
+#endif
+
 	bpno = cblk->numbps - 1;
-//	printf("bpno %d\n", bpno);
+
+//	printf("cblk->numbps %d\n", cblk->numbps);
 	passtype = 2;
 	
 	mqc_resetstates(mqc);

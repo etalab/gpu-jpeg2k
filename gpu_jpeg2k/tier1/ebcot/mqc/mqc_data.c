@@ -106,7 +106,7 @@ mqc_data_append(struct mqc_data* data, struct mqc_data_cblk* cblk)
 }
 
 void
-mqc_data_append_params(int w, int h, int *coeff_data, int orient, int qmfbid, int level, double stepsize, struct mqc_data* data) {
+mqc_data_append_params(int w, int h, int *coeff_data, int magbits, int orient, int qmfbid, int level, double stepsize, struct mqc_data* data) {
 	struct mqc_data_cblk* cblk = data->cblks[data->cblk_count - 1];
 	cblk->w = w;
 	cblk->h = h;
@@ -118,7 +118,7 @@ mqc_data_append_params(int w, int h, int *coeff_data, int orient, int qmfbid, in
 	cblk->dwtLevel = level;
 	cblk->compType = qmfbid == 1 ? 0 : 1;
 	cblk->stepSize = stepsize;
-	cblk->magbits = 25; //hardcoded
+	cblk->magbits = magbits; //hardcoded
 }
 
 void
@@ -137,12 +137,12 @@ mqc_data_destroy(struct mqc_data* data)
  * Callback for code-block begin
  */
 void
-mqc_data_on_cblk_begin(int w, int h, int *coeff_data, int orient, int qmfbid, int level, double stepsize, void* param)
+mqc_data_on_cblk_begin(int w, int h, int *coeff_data, int magbits, int orient, int qmfbid, int level, double stepsize, void* param)
 {
     struct mqc_data* data = (struct mqc_data*)param;
     struct mqc_data_cblk* cblk = mqc_data_cblk_create();
     mqc_data_append(data,cblk);
-    mqc_data_append_params(w, h, coeff_data, orient, qmfbid, level, stepsize, data);
+    mqc_data_append_params(w, h, coeff_data, magbits, orient, qmfbid, level, stepsize, data);
 }
 
 /**
