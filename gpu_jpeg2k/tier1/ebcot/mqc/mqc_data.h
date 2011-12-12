@@ -28,6 +28,7 @@ struct mqc_data_cblk {
     int stepSize;
     unsigned char* bytes;
     int byte_count;
+    int totalpasses;
 };
 
 /**

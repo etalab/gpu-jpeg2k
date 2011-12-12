@@ -914,8 +914,8 @@ OPJ_API void OPJ_CALLCONV opj_destroy_cstr_info(opj_codestream_info_t *cstr_info
 
 // Hook typedefs
 typedef void (*mqc_callback_t1)(void * param);
-typedef void (*mqc_callback_cblk)(void * param);
-typedef void (*mqc_callback_cblk_with_params)(int w, int h, int *coeff_data, int magbits, int orient, int qmfbid, int level, double stepsize, void* param);
+typedef void (*mqc_callback_cblk_end_with_params)(int totalpasses, void * param);
+typedef void (*mqc_callback_cblk_begin_with_params)(int w, int h, int *coeff_data, int magbits, int orient, int qmfbid, int level, double stepsize, void* param);
 typedef void (*mqc_callback_cxd_pair)(int cx, int d, int mps, void* param);
 typedef void (*mqc_callback_cblk_bytes)(unsigned char* bytes, int byte_count, void* param);
 typedef void (*mqc_callback_renormalize)(void * param);
@@ -923,8 +923,8 @@ typedef void (*mqc_callback_renormalize)(void * param);
 // Hook setters
 void mqc_set_callback_t1_begin(mqc_callback_t1 callback, void* param);
 void mqc_set_callback_t1_end(mqc_callback_t1 callback, void* param);  
-void mqc_set_callback_cblk_begin(mqc_callback_cblk_with_params callback, void* param);
-void mqc_set_callback_cblk_end(mqc_callback_cblk callback, void* param);  
+void mqc_set_callback_cblk_begin(mqc_callback_cblk_begin_with_params callback, void* param);
+void mqc_set_callback_cblk_end(mqc_callback_cblk_end_with_params callback, void* param);
 void mqc_set_callback_cxd_pair(mqc_callback_cxd_pair callback, void* param);
 void mqc_set_callback_cblk_bytes(mqc_callback_cblk_bytes callback, void* param);
 void mqc_set_callback_renormalize(mqc_callback_renormalize callback, void* param);

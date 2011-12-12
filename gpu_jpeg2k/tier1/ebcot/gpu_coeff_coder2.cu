@@ -836,7 +836,7 @@ __global__ void g_lengthCalculation(CodeBlockAdditionalInfo *infos, int codeBloc
 		return;
 
 	if(infos[threadId].significantBits > 0) {
-//		infos[threadId].length = mqFullFlush(mqstates[threadId]);
+		/*infos[threadId].length = */mqFullFlush(mqstates[threadId]);
 		infos[threadId].length = get_cxd_pairs_count(mqstates[threadId]);
 		infos[threadId].codingPasses = infos[threadId].significantBits * 3 -2;
 	}

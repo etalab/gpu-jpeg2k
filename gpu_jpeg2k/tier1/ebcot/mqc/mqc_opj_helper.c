@@ -46,7 +46,7 @@ mqc_opj_helper_reset()
 
 static unsigned int mqc_opj_helper_param_cblk_width = 64;
 static unsigned int mqc_opj_helper_param_cblk_height = 64;
-static unsigned int mqc_opj_helper_param_dwt = 5;
+static unsigned int mqc_opj_helper_param_dwt = 1;
 static bool mqc_opj_helper_param_irreversible = false;
 
 void

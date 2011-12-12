@@ -143,7 +143,7 @@ type_subband *quantization(type_subband *sb)
 		/* K_b_max = B - 1 + X_b + G */
 		sb->mag_bits = img->num_range_bits - 1 + get_exp_subband_gain(sb->orient) + guard_bits;
 		shift_bits = 31 - sb->mag_bits;
-		printf("magbits %d\n", sb->mag_bits);
+//		printf("magbits %d\n", sb->mag_bits);
 		sb->convert_factor = 1 << shift_bits;
 
 //		println_var(INFO, "Lossless mag_bits:%d convert_factor:%f shift_bits:%d subband_gain:%d", sb->mag_bits, sb->convert_factor, shift_bits, get_exp_subband_gain(sb->orient));

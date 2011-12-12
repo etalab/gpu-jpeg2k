@@ -41,7 +41,7 @@ int get_exp_subband_gain(int orient)
 
 void encode_tasks_test() {
 	char file_name[128];
-	sprintf(file_name, "/home/miloszc/Projects/images/rgb8bit/flower_foveon.ppm\0");
+	sprintf(file_name, "/home/miloszc/Projects/images/rgb8bit/flower_foveon_4x4_gray.bmp\0");
 	struct mqc_data* mqc_data = mqc_data_create_from_image(file_name);
 	if (mqc_data == 0) {
 		std::cerr << "Can't receive data from openjpeg: " << std::endl;
@@ -95,7 +95,7 @@ void encode_tasks_test() {
 		max = 0;
 		for(int j = 0; j < cblk->w; ++j) {
 			for(int k = 0; k < cblk->h; ++k) {
-//				cblk->coefficients[k * cblk->w + j] <<= (31 - 6 - h_infos[i].magbits);
+				cblk->coefficients[k * cblk->w + j] <<= (31 - 6 - h_infos[i].magbits);
 				if(cblk->coefficients[k * cblk->w + j] > max)
 					max = cblk->coefficients[k * cblk->w + j];	
 			}
@@ -125,10 +125,12 @@ void encode_tasks_test() {
 
 		magconOffset += h_infos[i].width * (h_infos[i].stripeNo + 2);
 
-//		printf("%d %d %d %d %d %d %d %d %d %f\n", h_infos[i].width, h_infos[i].height, h_infos[i].nominalWidth,
-//				h_infos[i].stripeNo, h_infos[i].subband, h_infos[i].magconOffset, h_infos[i].magbits,
-//				h_infos[i].compType, h_infos[i].dwtLevel, h_infos[i].stepSize);
+		printf("%d %d %d %d %d %d %d %d %d %f\n", h_infos[i].width, h_infos[i].height, h_infos[i].nominalWidth,
+				h_infos[i].stripeNo, h_infos[i].subband, h_infos[i].magconOffset, h_infos[i].magbits,
+				h_infos[i].compType, h_infos[i].dwtLevel, h_infos[i].stepSize);
 	}
+
+	binary_printf(mqc_data->cblks[0]->coefficients[0]);
 
 	cuda_d_allocate_mem((void **) &d_stBuffors, sizeof(GPU_JPEG2K::CoefficientState) * magconOffset);
 	CHECK_ERRORS(cudaMemset((void *) d_stBuffors, 0, sizeof(GPU_JPEG2K::CoefficientState) * magconOffset));
@@ -145,8 +147,21 @@ void encode_tasks_test() {
 
 	for (int i = 0; i < codeBlocks; ++i) {
 		struct mqc_data_cblk *cblk = mqc_data->cblks[i];
+		if(cblk->totalpasses != (unsigned int)h_infos[i].codingPasses) {
+			std::cerr << i <<  ") " << cblk->totalpasses << " != " << (unsigned int)h_infos[i].codingPasses << std::endl;
+		}
 		if (cblk->cxd_count != h_infos[i].length) {
 			std::cerr << cblk->cxd_count << " != " << h_infos[i].length << std::endl;
+			for(int j = 0; j < h_infos[i].length; ++j) {
+//				if(cblk->cxds[j] != h_cxd_pairs[i * maxOutLength + j]) {
+					std::cerr << i <<  ") ";
+					if(j < cblk->cxd_count)
+						binary_printf((cblk->cxds[j].d << 5) | cblk->cxds[j].cx);
+					std::cerr << "   ";
+					binary_printf(h_cxd_pairs[i * maxOutLength + j]);
+					std::cerr << std::endl;
+//				}
+			}
 		}
 	}
 }

@@ -114,7 +114,8 @@ static void mqc_gpu_encode_(EntropyCodingTaskInfo *infos, CodeBlockAdditionalInf
 			EntropyCodingTaskInfo * cblk = &infos[cblk_index];
 			struct cxd_block* cxd_block = &cxd_blocks[cblk_index];
 			cblk->length = cxd_block->byte_count > 0 ? cxd_block->byte_count : 0;
-			cblk->codeStream = &bytes[cxd_block->byte_begin];
+			cblk->codeStream = (unsigned char *)malloc(sizeof(unsigned char) * cxd_block->byte_count);
+			memcpy(cblk->codeStream, &bytes[cxd_block->byte_begin], sizeof(unsigned char) * cxd_block->byte_count);
 		}
 
 		// Free CPU Memory

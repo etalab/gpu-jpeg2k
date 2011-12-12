@@ -34,8 +34,8 @@
 #include "t1_luts.h"
 
 // Hook attributes
-static mqc_callback_cblk_with_params _mqc_callback_cblk_begin = 0;
-static mqc_callback_cblk _mqc_callback_cblk_end = 0;
+static mqc_callback_cblk_begin_with_params _mqc_callback_cblk_begin = 0;
+static mqc_callback_cblk_end_with_params _mqc_callback_cblk_end = 0;
 static mqc_callback_t1 _mqc_callback_t1_begin = 0;
 static mqc_callback_t1 _mqc_callback_t1_end = 0;
 static void* _mqc_callback_cblk_begin_param = 0;
@@ -44,12 +44,12 @@ static void* _mqc_callback_t1_begin_param = 0;
 static void* _mqc_callback_t1_end_param = 0;
 
 // Hook methods
-void mqc_set_callback_cblk_begin(mqc_callback_cblk_with_params callback, void* param)
+void mqc_set_callback_cblk_begin(mqc_callback_cblk_begin_with_params callback, void* param)
 {
     _mqc_callback_cblk_begin = callback;
     _mqc_callback_cblk_begin_param = param;
 }
-void mqc_set_callback_cblk_end(mqc_callback_cblk callback, void* param)
+void mqc_set_callback_cblk_end(mqc_callback_cblk_end_with_params callback, void* param)
 {
     _mqc_callback_cblk_end = callback;
     _mqc_callback_cblk_end_param = param;
@@ -1172,6 +1172,21 @@ static bool allocate_buffers(
 	return true;
 }
 
+void binary_printf(unsigned int in)
+{
+	int i = 0;
+	for(i = 0; i < 32; i++) {
+		if((in >> (31 - i)) & 1)
+			printf("1");
+		else
+			printf("0");
+		if(i % 8 == 7)
+			printf(" ");
+	}
+
+	printf("\n");
+}
+
 /** mod fixed_quality */
 static void t1_encode_cblk(
 		opj_t1_t *t1,
@@ -1202,6 +1217,8 @@ static void t1_encode_cblk(
 		max = int_max(max, tmp);
 	}
 
+	binary_printf(t1->data[0]);
+
 	cblk->numbps = max ? (int_floorlog2(max) + 1) - T1_NMSEDEC_FRACBITS : 0;
 	
 #ifndef _DATA_HOOK_DISABLED
@@ -1212,7 +1229,9 @@ static void t1_encode_cblk(
 
 	bpno = cblk->numbps - 1;
 
-//	printf("cblk->numbps %d\n", cblk->numbps);
+	printf("cblk->numbps %d\n", cblk->numbps);
+	printf("bpno %d\n", bpno);
+	binary_printf((1 << (bpno + T1_NMSEDEC_FRACBITS)));
 	passtype = 2;
 	
 	mqc_resetstates(mqc);
@@ -1294,7 +1313,7 @@ static void t1_encode_cblk(
 		if (cblksty & J2K_CCP_CBLKSTY_RESET)
 			mqc_reset_enc(mqc);
 	}
-	
+
 	/* Code switch "ERTERM" (i.e. PTERM) */
 	if (cblksty & J2K_CCP_CBLKSTY_PTERM)
 		mqc_erterm_enc(mqc);
@@ -1317,7 +1336,7 @@ static void t1_encode_cblk(
 #ifndef _DATA_HOOK_DISABLED 
     // Hook cblk end
     if ( _mqc_callback_cblk_end != 0 )
-        _mqc_callback_cblk_end(_mqc_callback_cblk_end_param);
+        _mqc_callback_cblk_end(cblk->totalpasses, _mqc_callback_cblk_end_param);
 #endif
 }
 

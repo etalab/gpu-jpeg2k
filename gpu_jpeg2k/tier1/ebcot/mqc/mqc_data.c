@@ -24,6 +24,7 @@ mqc_data_cblk_create()
     cblk->stepSize = 0.0;
     cblk->nominalWidth = 0;
     cblk->nominalHeight = 0;
+    cblk->totalpasses = 0;
     return cblk;
 }
 
@@ -106,7 +107,7 @@ mqc_data_append(struct mqc_data* data, struct mqc_data_cblk* cblk)
 }
 
 void
-mqc_data_append_params(int w, int h, int *coeff_data, int magbits, int orient, int qmfbid, int level, double stepsize, struct mqc_data* data) {
+mqc_data_append_start_params(int w, int h, int *coeff_data, int magbits, int orient, int qmfbid, int level, double stepsize, struct mqc_data* data) {
 	struct mqc_data_cblk* cblk = data->cblks[data->cblk_count - 1];
 	cblk->w = w;
 	cblk->h = h;
@@ -119,6 +120,12 @@ mqc_data_append_params(int w, int h, int *coeff_data, int magbits, int orient, i
 	cblk->compType = qmfbid == 1 ? 0 : 1;
 	cblk->stepSize = stepsize;
 	cblk->magbits = magbits; //hardcoded
+}
+
+void
+mqc_data_append_end_params(int totalpasses, struct mqc_data* data) {
+	struct mqc_data_cblk* cblk = data->cblks[data->cblk_count - 1];
+	cblk->totalpasses = totalpasses;
 }
 
 void
@@ -142,7 +149,17 @@ mqc_data_on_cblk_begin(int w, int h, int *coeff_data, int magbits, int orient, i
     struct mqc_data* data = (struct mqc_data*)param;
     struct mqc_data_cblk* cblk = mqc_data_cblk_create();
     mqc_data_append(data,cblk);
-    mqc_data_append_params(w, h, coeff_data, magbits, orient, qmfbid, level, stepsize, data);
+    mqc_data_append_start_params(w, h, coeff_data, magbits, orient, qmfbid, level, stepsize, data);
+}
+
+/**
+ * Callback for code-block end
+ */
+void
+mqc_data_on_cblk_end(int totalpasses, void* param)
+{
+    struct mqc_data* data = (struct mqc_data*)param;
+    mqc_data_append_end_params(totalpasses, data);
 }
 
 /**
@@ -196,6 +213,7 @@ mqc_data_create_from_image(const char* filename)
     // Init data callbacks
     mqc_opj_helper_reset();
     mqc_set_callback_cblk_begin(&mqc_data_on_cblk_begin, (void*)data);
+    mqc_set_callback_cblk_end(&mqc_data_on_cblk_end, (void*)data);
     mqc_set_callback_cxd_pair(&mqc_data_on_cxd, (void*)data);
     mqc_set_callback_cblk_bytes(&mqc_data_on_cblk_bytes, (void*)data);
 
