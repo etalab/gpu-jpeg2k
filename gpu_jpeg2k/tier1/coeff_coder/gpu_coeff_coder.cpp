@@ -105,7 +105,7 @@ float gpuEncode(EntropyCodingTaskInfo *infos, int count, int targetSize)
 	}
 	else
 	{
-		printf("Pcrd\n");
+		//printf("Pcrd\n");
 		CHECK_ERRORS(GPU_JPEG2K::launch_encode_pcrd((int) ceil((float) codeBlocks / THREADS), THREADS, d_stBuffors, d_outbuf, maxOutLength, d_infos, codeBlocks, targetSize));
 	}
 

@@ -925,14 +925,27 @@ __global__ void g_decode(CoefficientState *coeffBuffors, byte *inbuf, int maxThr
 
 void launch_encode(dim3 gridDim, dim3 blockDim, CoefficientState *coeffBuffors, byte *outbuf, byte *cxd_pairs, int maxThreadBufforLength, CodeBlockAdditionalInfo *infos, int codeBlocks)
 {
+	// Initialize CUDA
+	cudaError_t cuerr;
+
 	MQEncoder *mqstates;
 	cuda_d_allocate_mem((void **) &mqstates, sizeof(MQEncoder) * codeBlocks);
 
 //	printf("grid %d %d %d\nblock %d %d %d\n", gridDim.x, gridDim.y, gridDim.z, blockDim.x, blockDim.y, blockDim.z);
 
 	g_encode<<<gridDim, blockDim>>>(coeffBuffors, outbuf, cxd_pairs, maxThreadBufforLength, infos, codeBlocks, mqstates);
+	cudaThreadSynchronize();
+	if (cuerr = cudaGetLastError()) {
+		printf("g_encode error: %s\n", cudaGetErrorString(cuerr));
+		return;
+	}
 
 	g_lengthCalculation<<<(int) ceil(codeBlocks / 512.0f), 512>>>(infos, codeBlocks, mqstates);
+	cudaThreadSynchronize();
+	if (cuerr = cudaGetLastError()) {
+		printf("g_lengthCalculation error: %s\n", cudaGetErrorString(cuerr));
+		return;
+	}
 
 	cuda_d_free(mqstates);
 }

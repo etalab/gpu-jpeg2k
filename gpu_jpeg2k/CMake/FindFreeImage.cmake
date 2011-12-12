@@ -23,7 +23,7 @@ ELSE (WIN32)
 		/sw/include
 		/opt/local/include
 		${PROJECT_SOURCE_DIR}/freeimage/include
-		/home/aurox/Projects/workspace/j2k_main/freeimage/include
+		/home/miloszc/Projects/gpu_jpeg2k/freeimage/include
 		DOC "The directory where FreeImage.h resides")
 	FIND_LIBRARY( FREEIMAGE_LIBRARY
 		NAMES FreeImage freeimage
@@ -35,7 +35,7 @@ ELSE (WIN32)
 		/sw/lib
 		/opt/local/lib
 		${PROJECT_SOURCE_DIR}/freeimage/lib
-		/home/aurox/Projects/workspace/j2k_main/freeimage/lib
+		/home/miloszc/Projects/gpu_jpeg2k/freeimage/lib
 		DOC "The FreeImage library")
 ENDIF (WIN32)
 
