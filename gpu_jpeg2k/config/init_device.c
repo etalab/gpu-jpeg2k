@@ -13,9 +13,9 @@ void init_device(type_parameters *param)
 	int *d_tmp;
 	int h_tmp = 1;
 
-	int printf_buff = 10 * 1024 * 1024;
+	size_t printf_buff = 10 * 1024 * 1024 * 100;
 
-//	cuda_set_printf_limit(printf_buff);
+	cuda_set_printf_limit(printf_buff);
 	cuda_set_device(param->param_device);
 
 	cuda_d_allocate_mem((void**)&d_tmp, sizeof(int));

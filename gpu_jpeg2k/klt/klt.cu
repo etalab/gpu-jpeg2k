@@ -307,8 +307,8 @@ void encode_klt(type_parameters *param, type_image *img) {
 
 	img->num_components -= odciecie; 
 	//println_var(INFO, "Time of MCT processing %f", ((double)clock() - start)/ CLOCKS_PER_SEC);
-	printf("%ld\n", stop_measure(start_klt));
-	println_var(INFO, "MCT %d components droped", odciecie);
+//	printf("%ld\n", stop_measure(start_klt));
+//	println_var(INFO, "MCT %d components droped", odciecie);
 	checkCUDAError("after MCT");
 //	println_var(INFO, "after MCT");
 }

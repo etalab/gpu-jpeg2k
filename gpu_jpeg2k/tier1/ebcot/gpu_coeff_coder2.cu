@@ -292,6 +292,20 @@ __device__ float getDISW(CodeBlockAdditionalInfo *info)
 	return distWeights[info->compType][min<byte>(info->dwtLevel, 3)][info->subband] * info->stepSize * info->stepSize / ((float)(info->width * info->height));
 }
 
+__device__ void binary_printf(unsigned int in)
+{
+	for(int i = 0; i < 32; i++) {
+		if((in >> (31 - i)) & 1)
+			printf("1");
+		else
+			printf("0");
+		if(i % 8 == 7)
+			printf(" ");
+	}
+
+	printf("\n");
+}
+
 class RLEncodeFunctor {
 public:
 	__device__ char operator()(CtxWindow window, MQEncoder &enc)
@@ -300,17 +314,23 @@ public:
 
 		if((window.c & TRIMASK) == 0)
 		{
-			mqEncode(enc, 0, CX_RUN);
+			//if(enc.dcx_id == 24576) {
+                        //	printf("%d) rl1\n", enc.dcx_id);
+                	//}
+			mqEncode(enc, 0, /*CX_RUN*/CX_UNI);
 			rest = -2;
 		}
 		else
 		{
 			while(rest < 4 && ((window.c >> (3 * rest)) & 1) == 0)
 				rest++;
-
-			mqEncode(enc, 1, CX_RUN);
-			mqEncode(enc, rest >> 1, CX_UNI);
-			mqEncode(enc, rest & 1, CX_UNI);
+			
+			//if(enc.dcx_id == 24576) {
+                        //	printf("%d) rl2\n", enc.dcx_id);
+                	//}
+			mqEncode(enc, 1, /*CX_RUN*/CX_UNI);
+			mqEncode(enc, rest >> 1, /*CX_UNI*/CX_RUN);
+			mqEncode(enc, rest & 1, /*CX_UNI*/CX_RUN);
 		}
 
 		return rest;
@@ -344,6 +364,9 @@ class SigEncodeFunctor {
 public:
 	__device__ void operator()(CtxWindow &window, CtxReg &sig, MQEncoder &enc, int stripId, int subband)
 	{
+		//if(enc.dcx_id == 24576) {
+                //       printf("%d) sig\n", enc.dcx_id);
+                //}
 		mqEncode(enc, (window.c >> (3 * stripId)) & 1, getSPCX(sig, stripId, subband));
 	}
 };
@@ -362,7 +385,9 @@ public:
 	__device__ void operator()(CtxWindow &window, CtxReg &sig, MQEncoder &enc, int stripId)
 	{
 		unsigned char cx = getSICX(sig, buildCtxReg(window, 13), stripId);
-
+		//if(enc.dcx_id == 24576) {
+                //        printf("%d) sign\n", enc.dcx_id);
+                //}
 		mqEncode(enc, (short) (((window.c >> (13 + 3 * stripId)) & 1) ^ ((cx >> 4) & 1)), cx & 0xF);
 	}
 };
@@ -469,6 +494,11 @@ class MagRefEncodeFunctor {
 public:
 	__device__ void operator()(MQEncoder &enc, CtxWindow &window, int stripId)
 	{
+		//if(getMRCX(buildCtxReg(window, 1), window.c, stripId) == 0)
+		//	printf("MRE\n");
+		//if(enc.dcx_id == 24576) {
+		//	printf("%d) mrp\n", enc.dcx_id);
+		//}
 		mqEncode(enc, (window.c >> (3 * stripId)) & 1, getMRCX(buildCtxReg(window, 1), window.c, stripId));
 	}
 };
@@ -516,6 +546,7 @@ __device__ void initCoeffs(const CodeBlockAdditionalInfo &info, CoefficientState
 				if(4 * j + k < info.height)
 				{
 					c = info.coefficients[(4 * j + k) * info.nominalWidth + i];
+//					binary_printf(c);
 					//Cstates[l++] = (4 * j + k) * info.nominalWidth + i;
 					st |= (((c >> signOffset) & 1) << (13 + 3 * k));
 				}
@@ -576,6 +607,7 @@ __device__ void fillMags(const CodeBlockAdditionalInfo &info, CoefficientState *
 					st |= ((info.coefficients[(4 * j + k) * info.nominalWidth + i] >> bitplane) & 1) << (3 * k);
 
 			coeffs[j * info.width + i] = st;
+//			binary_printf(st);
 		}
 }
 
@@ -683,6 +715,7 @@ __device__ void encode(CoefficientState *coeffs, byte *out, byte *cxd_pairs, Cod
 		for(int j = 0; j < info.height; j++)
 		{
 			c = info.coefficients[j * info.nominalWidth + i];
+//			binary_printf(c);
 			int k;
 			for(k = 30; k >= leastSignificantBP; k--)
 				if((c >> k) & 1)

@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 //	dbg_fiwt_1d();
 //	dbg_wt();
 //	dbg_quantization();
-	encode_tasks_test();
+	encode_tasks_test(argv[1]);
 
 	return 0;
 }

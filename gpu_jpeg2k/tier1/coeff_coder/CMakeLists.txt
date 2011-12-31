@@ -1,4 +1,5 @@
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS})
+#"--ptxas-options=-dlcm=cg"
 
 find_package(PkgConfig REQUIRED)
 #find_package(Boost REQUIRED)

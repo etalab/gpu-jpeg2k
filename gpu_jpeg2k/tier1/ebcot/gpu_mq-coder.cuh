@@ -2,7 +2,7 @@
 #define GPU_MQ_CODER_CUH_
 
 #include "gpu_c2luts.cuh"
-
+#include <stdio.h>
 typedef unsigned char byte;
 
 #define CX_RUN 18
@@ -338,7 +338,12 @@ __device__ void mqEncode(MQEncoder &encoder, int decision, int context)
 	Cstates[l++] = context;
 	/* */
 	#endif
-	
+
+//	printf("id %d \n", encoder.dcx_id);
+//	if(encoder.dcx_id <= 24584)
+//		printf("%d) %d %d\n", encoder.dcx_id, decision, context);
+//	if((context == 0) && (decision == 0))
+//		printf("context = 0\n");	
 	encoder.cxd_pairs[encoder.dcx_id++] = ((unsigned char)((decision << 5) | context));
 
 	encoder.CX = context;

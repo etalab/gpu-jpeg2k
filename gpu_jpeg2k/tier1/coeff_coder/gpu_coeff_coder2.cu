@@ -927,6 +927,8 @@ void launch_encode(dim3 gridDim, dim3 blockDim, CoefficientState *coeffBuffors, 
 	MQEncoder *mqstates;
 	cuda_d_allocate_mem((void **) &mqstates, sizeof(MQEncoder) * codeBlocks);
 
+//        cudaFuncSetCacheConfig(g_encode, cudaFuncCachePreferL1);
+
 //	printf("grid %d %d %d\nblock %d %d %d\n", gridDim.x, gridDim.y, gridDim.z, blockDim.x, blockDim.y, blockDim.z);
 
 	g_encode<<<gridDim, blockDim>>>(coeffBuffors, outbuf, maxThreadBufforLength, infos, codeBlocks, mqstates);

@@ -39,9 +39,7 @@ int get_exp_subband_gain(int orient)
 	return (orient & 1) + ((orient >> 1) & 1);
 }
 
-void encode_tasks_test() {
-	char file_name[128];
-	sprintf(file_name, "/home/miloszc/Projects/images/rgb8bit/flower_foveon_4x4_gray.bmp\0");
+void encode_tasks_test(const char *file_name) {
 	struct mqc_data* mqc_data = mqc_data_create_from_image(file_name);
 	if (mqc_data == 0) {
 		std::cerr << "Can't receive data from openjpeg: " << std::endl;
@@ -53,9 +51,9 @@ void encode_tasks_test() {
 
 	int codeBlocks = mqc_data->cblk_count;
 	// maximum 6 CX, D pairs per coeff in codeblock
-	int maxOutLength = /*mqc_data->cblks[0]->w * mqc_data->cblks[0]->h * 6*/4096*6;
+	int maxOutLength = /*mqc_data->cblks[0]->w * mqc_data->cblks[0]->h * 6*/4096*10;
 
-	printf("codeBlocks %d %d\n", codeBlocks, maxOutLength);
+	printf("codeBlocks %d %d\n", codeBlocks, mqc_data->cblks[0]->cxd_count);
 
 	byte *d_outbuf;
 	byte *d_cxd_pairs;
@@ -85,6 +83,9 @@ void encode_tasks_test() {
 		int max = 0;
 		for(int j = 0; j < cblk->w; ++j) {
                         for(int k = 0; k < cblk->h; ++k) {
+//				if(cblk->coefficients[k * cblk->w + j] < 0)
+//					printf("-");
+//				binary_printf(abs(cblk->coefficients[k * cblk->w + j]));
 //                                cblk->coefficients[k * cblk->w + j] <<= (31 - 6 - (cblk->magbits));
                                 if(cblk->coefficients[k * cblk->w + j] > max)
                                         max = cblk->coefficients[k * cblk->w + j];
@@ -95,7 +96,9 @@ void encode_tasks_test() {
 		max = 0;
 		for(int j = 0; j < cblk->w; ++j) {
 			for(int k = 0; k < cblk->h; ++k) {
-				cblk->coefficients[k * cblk->w + j] <<= (31 - 6 - h_infos[i].magbits);
+				int cache_value = (cblk->coefficients[k * cblk->w + j]) << (31 - 6 - h_infos[i].magbits);
+				cblk->coefficients[k * cblk->w + j] = cache_value < 0 ? (1 << 31) | (-cache_value) : cache_value;
+//				binary_printf(cblk->coefficients[k * cblk->w + j]);
 				if(cblk->coefficients[k * cblk->w + j] > max)
 					max = cblk->coefficients[k * cblk->w + j];	
 			}
@@ -145,10 +148,14 @@ void encode_tasks_test() {
 
 	cuda_memcpy_dth(d_infos, h_infos, sizeof(CodeBlockAdditionalInfo) * codeBlocks);
 
+	printf("\n\n\n");
 	for (int i = 0; i < codeBlocks; ++i) {
 		struct mqc_data_cblk *cblk = mqc_data->cblks[i];
-		if(cblk->totalpasses != (unsigned int)h_infos[i].codingPasses) {
-			std::cerr << i <<  ") " << cblk->totalpasses << " != " << (unsigned int)h_infos[i].codingPasses << std::endl;
+		for(int j = 0; j < cblk->cxd_count; ++j) {
+			if((cblk->cxds[j].d != ((h_cxd_pairs[i * maxOutLength + j]&(1<<5)) >> 5)) || (cblk->cxds[j].cx != (h_cxd_pairs[i * maxOutLength + j]&0x1f))) {
+				printf("%d) + %d %d		", j, cblk->cxds[j].d, cblk->cxds[j].cx);
+				printf("- %d %d\n", (h_cxd_pairs[i * maxOutLength + j]&(1<<5)) >> 5, h_cxd_pairs[i * maxOutLength + j]&0x1f);
+			}
 		}
 		if (cblk->cxd_count != h_infos[i].length) {
 			std::cerr << cblk->cxd_count << " != " << h_infos[i].length << std::endl;

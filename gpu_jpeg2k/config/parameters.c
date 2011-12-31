@@ -29,8 +29,8 @@ void default_config_values(type_parameters *param) {
 	param->param_use_part2_mct = 0;
 	param->param_mct_compression_method = 0;
 	param->param_mct_klt_iterations = 10000;
-	param->param_mct_klt_err = 1.0e-3;
-	param->param_mct_klt_border_eigenvalue = 2.0;
+	param->param_mct_klt_err = 1.0e-7;
+	param->param_mct_klt_border_eigenvalue = 0.0001;
 }
 
 static int handler(/*@unused@*/void* user, /*@unused@*/const char* section, const char* name, const char* value,

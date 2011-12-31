@@ -380,7 +380,7 @@ int read_image(type_image *img, type_parameters *param)
 	{
 		if(read_hyper_image(&img, param) == -1)
 			return -1;
-		println_var(INFO, "Bsq image type!");
+//		println_var(INFO, "Bsq image type!");
 	} else
 	{
 		read_ordinary_image(&img, param);
