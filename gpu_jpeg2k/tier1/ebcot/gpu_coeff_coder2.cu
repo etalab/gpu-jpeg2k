@@ -308,7 +308,7 @@ __device__ void binary_printf(unsigned int in)
 
 class RLEncodeFunctor {
 public:
-	__device__ char operator()(CtxWindow window, MQEncoder &enc)
+	__device__ char operator()(CtxWindow window, MQEncoder &enc, CXD &cxd_pair)
 	{
 		char rest = 0;
 
@@ -317,7 +317,8 @@ public:
 			//if(enc.dcx_id == 24576) {
                         //	printf("%d) rl1\n", enc.dcx_id);
                 	//}
-			mqEncode(enc, 0, /*CX_RUN*/CX_UNI);
+			save_cxd_pair(cxd_pair, 0, CX_UNI);
+			//mqEncode(enc, 0, /*CX_RUN*/CX_UNI);
 			rest = -2;
 		}
 		else
@@ -328,9 +329,12 @@ public:
 			//if(enc.dcx_id == 24576) {
                         //	printf("%d) rl2\n", enc.dcx_id);
                 	//}
-			mqEncode(enc, 1, /*CX_RUN*/CX_UNI);
-			mqEncode(enc, rest >> 1, /*CX_UNI*/CX_RUN);
-			mqEncode(enc, rest & 1, /*CX_UNI*/CX_RUN);
+			save_cxd_pair(cxd_pair, 1, CX_UNI);
+			save_cxd_pair(cxd_pair, rest >> 1, CX_RUN);
+			save_cxd_pair(cxd_pair, rest & 1, CX_RUN);
+			//mqEncode(enc, 1, /*CX_RUN*/CX_UNI);
+			//mqEncode(enc, rest >> 1, /*CX_UNI*/CX_RUN);
+			//mqEncode(enc, rest & 1, /*CX_UNI*/CX_RUN);
 		}
 
 		return rest;
@@ -339,7 +343,7 @@ public:
 
 class RLDecodeFunctor {
 public:
-	__device__ char operator()(CtxWindow &window, MQDecoder &dec)
+	__device__ char operator()(CtxWindow &window, MQDecoder &dec, CXD &cxd_pair)
 	{
 		char rest = 0;
 
@@ -362,18 +366,19 @@ public:
 
 class SigEncodeFunctor {
 public:
-	__device__ void operator()(CtxWindow &window, CtxReg &sig, MQEncoder &enc, int stripId, int subband)
+	__device__ void operator()(CtxWindow &window, CtxReg &sig, MQEncoder &enc, CXD &cxd_pair, int stripId, int subband)
 	{
 		//if(enc.dcx_id == 24576) {
                 //       printf("%d) sig\n", enc.dcx_id);
                 //}
-		mqEncode(enc, (window.c >> (3 * stripId)) & 1, getSPCX(sig, stripId, subband));
+		save_cxd_pair(cxd_pair, (window.c >> (3 * stripId)) & 1, getSPCX(sig, stripId, subband));
+		//mqEncode(enc, (window.c >> (3 * stripId)) & 1, getSPCX(sig, stripId, subband));
 	}
 };
 
 class SigDecodeFunctor {
 public:
-	__device__ void operator()(CtxWindow &window, CtxReg sig, MQDecoder &dec, int stripId, int subband)
+	__device__ void operator()(CtxWindow &window, CtxReg sig, MQDecoder &dec, CXD &cxd_pair, int stripId, int subband)
 	{
 		window.c |= mqDecode(dec, getSPCX(sig, stripId, subband)) << (3 * stripId);
 	}
@@ -382,20 +387,21 @@ public:
 class SignEncodeFunctor
 {
 public:
-	__device__ void operator()(CtxWindow &window, CtxReg &sig, MQEncoder &enc, int stripId)
+	__device__ void operator()(CtxWindow &window, CtxReg &sig, MQEncoder &enc, CXD &cxd_pair, int stripId)
 	{
 		unsigned char cx = getSICX(sig, buildCtxReg(window, 13), stripId);
 		//if(enc.dcx_id == 24576) {
                 //        printf("%d) sign\n", enc.dcx_id);
                 //}
-		mqEncode(enc, (short) (((window.c >> (13 + 3 * stripId)) & 1) ^ ((cx >> 4) & 1)), cx & 0xF);
+		save_cxd_pair(cxd_pair, (short) (((window.c >> (13 + 3 * stripId)) & 1) ^ ((cx >> 4) & 1)), cx & 0xF);
+		//mqEncode(enc, (short) (((window.c >> (13 + 3 * stripId)) & 1) ^ ((cx >> 4) & 1)), cx & 0xF);
 	}
 };
 
 class SignDecodeFunctor
 {
 public:
-	__device__ void operator()(CtxWindow &window, CtxReg sig, MQDecoder &dec, int stripId)
+	__device__ void operator()(CtxWindow &window, CtxReg sig, MQDecoder &dec, CXD &cxd_pair, int stripId)
 	{
 		unsigned char cx = getSICX(sig, buildCtxReg(window, 13), stripId);
 
@@ -407,7 +413,7 @@ template <class RLCodingFunctor, class SigCodingFunctor, class SignCodingFunctor
 class CleanUpPassFunctor
 {
 public:
-	__device__ void operator()(const CodeBlockAdditionalInfo &info, CtxWindow &window, MQCoderStateType &mq, float *sum_dist, unsigned char bitplane)
+	__device__ void operator()(const CodeBlockAdditionalInfo &info, CtxWindow &window, MQCoderStateType &mq, CXD &cxd_pair, float *sum_dist, unsigned char bitplane)
 	{
 		char rest;
 
@@ -416,7 +422,7 @@ public:
 		rest = -1;
 		if((window.c & (TRIMASK << 14)) == 0 && sig == 0) // all contexts in stripe are equal to zero
 		{
-			rest = RLCodingFunctor()(window, mq);
+			rest = RLCodingFunctor()(window, mq, cxd_pair);
 			if(rest == -2)
 				return;
 		}
@@ -431,7 +437,7 @@ public:
 				if(rest >= 0)
 					rest--;
 				else
-					SigCodingFunctor()(window, sig, mq, k, info.subband);
+					SigCodingFunctor()(window, sig, mq, cxd_pair, k, info.subband);
 			
 				if((window.c >> (3 * k)) & 1) // check if magnitude is 1
 				{
@@ -442,7 +448,7 @@ public:
 					SetNthBit(window.c, 1 + 3 * k); // set k-th significant state
 					sig = buildCtxReg(window, 1); // rebuild significance register
 
-					SignCodingFunctor()(window, sig, mq, k);
+					SignCodingFunctor()(window, sig, mq, cxd_pair, k);
 				}
 			}
 		}
@@ -452,7 +458,7 @@ public:
 template <class SigCodingFunctor, class SignCodingFunctor, typename MQCoderStateType>
 class SigPropPassFunctor {
 public:
-__device__ void operator()(const CodeBlockAdditionalInfo &info, CtxWindow &window, MQCoderStateType &mq, float *sum_dist, unsigned char bitplane)
+__device__ void operator()(const CodeBlockAdditionalInfo &info, CtxWindow &window, MQCoderStateType &mq, CXD &cxd_pair, float *sum_dist, unsigned char bitplane)
 {
 	CtxReg sig = buildCtxReg(window, 1); // build significance context register
 
@@ -465,7 +471,7 @@ __device__ void operator()(const CodeBlockAdditionalInfo &info, CtxWindow &windo
 			(((window.c >> (3 * i)) & 0x4002) == 0) &&
 			((sig >> (3 * i)) & 0x1EF) != 0)
 		{
-			SigCodingFunctor()(window, sig, mq, i, info.subband);
+			SigCodingFunctor()(window, sig, mq, cxd_pair, i, info.subband);
 
 			// if magnitude bit is one
 			if((window.c >> (3 * i)) & 1)
@@ -477,7 +483,7 @@ __device__ void operator()(const CodeBlockAdditionalInfo &info, CtxWindow &windo
 				SetNthBit(window.c, 1 + (3 * i));
 				sig = buildCtxReg(window, 1); // rebuild
 
-				SignCodingFunctor()(window, sig, mq, i);
+				SignCodingFunctor()(window, sig, mq, cxd_pair, i);
 			}
 
 			// set pi (already coded)
@@ -492,20 +498,21 @@ __device__ void operator()(const CodeBlockAdditionalInfo &info, CtxWindow &windo
 
 class MagRefEncodeFunctor {
 public:
-	__device__ void operator()(MQEncoder &enc, CtxWindow &window, int stripId)
+	__device__ void operator()(MQEncoder &enc, CXD &cxd_pair, CtxWindow &window, int stripId)
 	{
 		//if(getMRCX(buildCtxReg(window, 1), window.c, stripId) == 0)
 		//	printf("MRE\n");
 		//if(enc.dcx_id == 24576) {
 		//	printf("%d) mrp\n", enc.dcx_id);
 		//}
-		mqEncode(enc, (window.c >> (3 * stripId)) & 1, getMRCX(buildCtxReg(window, 1), window.c, stripId));
+		save_cxd_pair(cxd_pair, (window.c >> (3 * stripId)) & 1, getMRCX(buildCtxReg(window, 1), window.c, stripId));
+		//mqEncode(enc, (window.c >> (3 * stripId)) & 1, getMRCX(buildCtxReg(window, 1), window.c, stripId));
 	}
 };
 
 class MagRefDecodeFunctor {
 public:
-	__device__ void operator()(MQDecoder &dec, CtxWindow &window, int stripId)
+	__device__ void operator()(MQDecoder &dec, CXD &cxd_pair, CtxWindow &window, int stripId)
 	{
 		window.c |= (mqDecode(dec, getMRCX(buildCtxReg(window, 1), window.c, stripId)) << (3 * stripId));
 	}
@@ -514,7 +521,7 @@ public:
 template <class MagRefCodingFunctor, typename MQCoderStateType>
 class MagRefPassFunctor {
 public:
-__device__ void operator()(const CodeBlockAdditionalInfo &info, CtxWindow &window, MQCoderStateType &mq, float *sum_dist, unsigned char bitplane)
+__device__ void operator()(const CodeBlockAdditionalInfo &info, CtxWindow &window, MQCoderStateType &mq, CXD &cxd_pair, float *sum_dist, unsigned char bitplane)
 {
 	for(int i = 0; i < 4; i++)
 	{
@@ -525,7 +532,7 @@ __device__ void operator()(const CodeBlockAdditionalInfo &info, CtxWindow &windo
 //			debug_print(sum_dist, threadIdx.x);
 //			if(blockIdx.x * blockDim.x + threadIdx.x == 0)
 //			printf("mgr:%f tid:%d\n", *sum_dist, blockIdx.x * blockDim.x + threadIdx.x);
-			MagRefCodingFunctor()(mq, window, i);
+			MagRefCodingFunctor()(mq, cxd_pair, window, i);
 			SetNthBit(window.c, 3 * i + 12);
 		}
 	}
@@ -645,7 +652,7 @@ __device__ void clearWindow(CtxWindow &w)
 }
 
 template <class PassFunctor, typename MQCoderStateType>
-__device__ void BITPLANE_WINDOW_SCAN(CodeBlockAdditionalInfo &info, CoefficientState *coeffs, MQCoderStateType &enc, float *sum_dist, unsigned char bitplane) {
+__device__ void BITPLANE_WINDOW_SCAN(CodeBlockAdditionalInfo &info, CoefficientState *coeffs, MQCoderStateType &enc, CXD &cxd_pair, float *sum_dist, unsigned char bitplane) {
 	CtxWindow window;
 
 	window.pos = -1;
@@ -657,18 +664,18 @@ __device__ void BITPLANE_WINDOW_SCAN(CodeBlockAdditionalInfo &info, CoefficientS
 		shift(window);
 		down(info, window, coeffs);
 	
-		PassFunctor()(info, window, enc, sum_dist, bitplane);
+		PassFunctor()(info, window, enc, cxd_pair, sum_dist, bitplane);
 
 		for(int k = 0; k < info.width - 2; k++)
 		{
 			shift(window);
 			down(info, window, coeffs);
-			PassFunctor()(info, window, enc, sum_dist, bitplane);
+			PassFunctor()(info, window, enc, cxd_pair, sum_dist, bitplane);
 			up(window, coeffs);
 		}
 
 		shift(window);
-		PassFunctor()(info, window, enc, sum_dist, bitplane);
+		PassFunctor()(info, window, enc, cxd_pair, sum_dist, bitplane);
 		up(window, coeffs);
 		shift(window);
 		up(window, coeffs);
@@ -680,7 +687,7 @@ __device__ void BITPLANE_WINDOW_SCAN(CodeBlockAdditionalInfo &info, CoefficientS
 class PCRD_EmptyFunctor
 {
 public:
-	__device__ void operator()(MQEncoder state, MQEncoder *states, unsigned char &stateId, float sum_dist, PcrdCodeblock *pcrdCodeblock)
+	__device__ void operator()(MQEncoder state, CXD cxd_pair, MQEncoder *states, CXD *cxds, unsigned char &stateId, float sum_dist, PcrdCodeblock *pcrdCodeblock)
 	{
 	}
 };
@@ -688,8 +695,9 @@ public:
 class PCRD_CollectMQStatesFunctor
 {
 public:
-	__device__ void operator()(MQEncoder state, MQEncoder *states, unsigned char &stateId, float sum_dist, PcrdCodeblock *pcrdCodeblock)
+	__device__ void operator()(MQEncoder state, CXD cxd_pair, MQEncoder *states, CXD *cxds, unsigned char &stateId, float sum_dist, PcrdCodeblock *pcrdCodeblock)
 	{
+		cxds[stateId] = cxd_pair;
 		states[stateId++] = state;
 		pcrdCodeblock[stateId].dist = sum_dist;
 	}
@@ -698,14 +706,15 @@ public:
 class CollectMQStatesFunctor
 {
 public:
-	__device__ void operator()(MQEncoder state, MQEncoder *states, unsigned char &stateId, float sum_dist, PcrdCodeblock *pcrdCodeblock)
+	__device__ void operator()(MQEncoder state, CXD cxd_pair, MQEncoder *states, CXD *cxds, unsigned char &stateId, float sum_dist, PcrdCodeblock *pcrdCodeblock)
 	{
+		cxds[stateId] = cxd_pair;
 		states[stateId++] = state;
 	}
 };
 
 template <class PostPassFunctor, class PostCodingFunctor>
-__device__ void encode(CoefficientState *coeffs, byte *out, byte *cxd_pairs, CodeBlockAdditionalInfo &info, MQEncoder *states, PcrdCodeblock *pcrdCodeblock = NULL)
+__device__ void encode(CoefficientState *coeffs, byte *out, byte *cxd_pairs, CodeBlockAdditionalInfo &info, MQEncoder *states, CXD *cxds, PcrdCodeblock *pcrdCodeblock = NULL)
 {
 	unsigned char leastSignificantBP = 31 - info.magbits;
 
@@ -726,6 +735,8 @@ __device__ void encode(CoefficientState *coeffs, byte *out, byte *cxd_pairs, Cod
 
 		}
 
+	CXD cxd_pair;
+	cxdPairInit(cxd_pair, cxd_pairs);
 	MQEncoder mqenc;
 	mqInitEnc(mqenc, out, cxd_pairs);
 				
@@ -748,9 +759,9 @@ __device__ void encode(CoefficientState *coeffs, byte *out, byte *cxd_pairs, Cod
 
 		BITPLANE_WINDOW_SCAN
 		<CleanUpPassFunctor<RLEncodeFunctor, SigEncodeFunctor, SignEncodeFunctor, MQEncoder>, MQEncoder >
-			(info, coeffs, mqenc, &sum_dist, info.significantBits - 1);
+			(info, coeffs, mqenc, cxd_pair, &sum_dist, info.significantBits - 1);
 
-		PostPassFunctor()(mqenc, states, sid, sum_dist, pcrdCodeblock);
+		PostPassFunctor()(mqenc, cxd_pair, states, cxds, sid, sum_dist, pcrdCodeblock);
 		
 		for(unsigned char i = 1; i < info.significantBits; i++)
 		{
@@ -760,30 +771,31 @@ __device__ void encode(CoefficientState *coeffs, byte *out, byte *cxd_pairs, Cod
 			
 			BITPLANE_WINDOW_SCAN
 			<SigPropPassFunctor<SigEncodeFunctor, SignEncodeFunctor, MQEncoder>, MQEncoder >
-				(info, coeffs, mqenc, &sum_dist, info.significantBits - i - 1);
+				(info, coeffs, mqenc, cxd_pair, &sum_dist, info.significantBits - i - 1);
 
-			PostPassFunctor()(mqenc, states, sid, sum_dist, pcrdCodeblock);
+			PostPassFunctor()(mqenc, cxd_pair, states, cxds, sid, sum_dist, pcrdCodeblock);
 
 			BITPLANE_WINDOW_SCAN
 			<MagRefPassFunctor<MagRefEncodeFunctor, MQEncoder>, MQEncoder >
-				(info, coeffs, mqenc, &sum_dist, info.significantBits - i - 1);
+				(info, coeffs, mqenc, cxd_pair, &sum_dist, info.significantBits - i - 1);
 
-			PostPassFunctor()(mqenc, states, sid, sum_dist, pcrdCodeblock);
+			PostPassFunctor()(mqenc, cxd_pair, states, cxds, sid, sum_dist, pcrdCodeblock);
 
 			BITPLANE_WINDOW_SCAN
 			<CleanUpPassFunctor<RLEncodeFunctor, SigEncodeFunctor, SignEncodeFunctor, MQEncoder>, MQEncoder >
-				(info, coeffs, mqenc, &sum_dist, info.significantBits - i - 1);
+				(info, coeffs, mqenc, cxd_pair, &sum_dist, info.significantBits - i - 1);
 
-			PostPassFunctor()(mqenc, states, sid, sum_dist, pcrdCodeblock);
+			PostPassFunctor()(mqenc, cxd_pair, states, cxds, sid, sum_dist, pcrdCodeblock);
 		}
 
-		PostCodingFunctor()(mqenc, states, sid, sum_dist, pcrdCodeblock);
+		PostCodingFunctor()(mqenc, cxd_pair, states, cxds, sid, sum_dist, pcrdCodeblock);
 		mqFlush(mqenc);
 	}
 }
 
 __device__ void decode(CoefficientState *coeffs, CodeBlockAdditionalInfo &info, byte *in)
 {
+	CXD cxd_pair;
 	MQDecoder mqdec;
 	mqInitDec(mqdec, in, info.length);
 
@@ -797,7 +809,7 @@ __device__ void decode(CoefficientState *coeffs, CodeBlockAdditionalInfo &info, 
 
 		BITPLANE_WINDOW_SCAN
 		<CleanUpPassFunctor<RLDecodeFunctor, SigDecodeFunctor, SignDecodeFunctor, MQDecoder>, MQDecoder>
-			(info, coeffs, mqdec, &sum_dist, 0);
+			(info, coeffs, mqdec, cxd_pair, &sum_dist, 0);
 
 		uploadMags(info, coeffs, 30 - info.magbits + info.significantBits);
 
@@ -805,15 +817,15 @@ __device__ void decode(CoefficientState *coeffs, CodeBlockAdditionalInfo &info, 
 		{
 			BITPLANE_WINDOW_SCAN
 			<SigPropPassFunctor<SigDecodeFunctor, SignDecodeFunctor, MQDecoder>, MQDecoder>
-				(info, coeffs, mqdec, &sum_dist, 0);
+				(info, coeffs, mqdec, cxd_pair, &sum_dist, 0);
 
 			BITPLANE_WINDOW_SCAN
 			<MagRefPassFunctor<MagRefDecodeFunctor, MQDecoder>, MQDecoder>
-				(info, coeffs, mqdec, &sum_dist, 0);
+				(info, coeffs, mqdec, cxd_pair, &sum_dist, 0);
 
 			BITPLANE_WINDOW_SCAN
 			<CleanUpPassFunctor<RLDecodeFunctor, SigDecodeFunctor, SignDecodeFunctor, MQDecoder>, MQDecoder>
-				(info, coeffs, mqdec, &sum_dist, 0);
+				(info, coeffs, mqdec, cxd_pair, &sum_dist, 0);
 
 			uploadMags(info, coeffs, 30 - info.magbits - i + info.significantBits);
 		}
@@ -829,7 +841,7 @@ __device__ void decode(CoefficientState *coeffs, CodeBlockAdditionalInfo &info, 
 	}
 }
 
-__global__ void g_encode(CoefficientState *coeffBuffors, byte *outbuf, byte *cxd_pairs, int maxThreadBufforLength, CodeBlockAdditionalInfo *infos, int codeBlocks, MQEncoder *mqstates)
+__global__ void g_encode(CoefficientState *coeffBuffors, byte *outbuf, byte *cxd_pairs, int maxThreadBufforLength, CodeBlockAdditionalInfo *infos, int codeBlocks, MQEncoder *mqstates, CXD *cxds)
 {
 	int threadId = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -839,7 +851,7 @@ __global__ void g_encode(CoefficientState *coeffBuffors, byte *outbuf, byte *cxd
 	CodeBlockAdditionalInfo info = infos[threadId];
 
 	info.length = 0;
-	encode<PCRD_EmptyFunctor, CollectMQStatesFunctor>(coeffBuffors + info.magconOffset, outbuf + threadId * maxThreadBufforLength, cxd_pairs + threadId * maxThreadBufforLength, info, mqstates + threadId);
+	encode<PCRD_EmptyFunctor, CollectMQStatesFunctor>(coeffBuffors + info.magconOffset, outbuf + threadId * maxThreadBufforLength, cxd_pairs + threadId * maxThreadBufforLength, info, mqstates + threadId, cxds + threadId);
 
 	infos[threadId].significantBits = info.significantBits;
 	infos[threadId].length = info.length;
@@ -855,13 +867,13 @@ __global__ void g_encode_pcrd(CoefficientState *coeffBuffors, byte *outbuf, int 
 	CodeBlockAdditionalInfo info = infos[threadId];
 
 	info.length = 0;
-	encode<PCRD_CollectMQStatesFunctor, PCRD_EmptyFunctor>(coeffBuffors + info.magconOffset, outbuf + threadId * maxThreadBufforLength, NULL, info, mqstates + threadId * maxStatesPerCodeblock, pcrdCodeblocks + threadId * maxStatesPerCodeblock);
+	encode<PCRD_CollectMQStatesFunctor, PCRD_EmptyFunctor>(coeffBuffors + info.magconOffset, outbuf + threadId * maxThreadBufforLength, NULL, info, mqstates + threadId * maxStatesPerCodeblock, NULL, pcrdCodeblocks + threadId * maxStatesPerCodeblock);
 
 	infos[threadId].significantBits = info.significantBits;
 	infos[threadId].length = info.length;
 }
 
-__global__ void g_lengthCalculation(CodeBlockAdditionalInfo *infos, int codeBlocks, MQEncoder *mqstates)
+__global__ void g_lengthCalculation(CodeBlockAdditionalInfo *infos, int codeBlocks, MQEncoder *mqstates, CXD *cxds)
 {
 	int threadId = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -870,7 +882,7 @@ __global__ void g_lengthCalculation(CodeBlockAdditionalInfo *infos, int codeBloc
 
 	if(infos[threadId].significantBits > 0) {
 		/*infos[threadId].length = */mqFullFlush(mqstates[threadId]);
-		infos[threadId].length = get_cxd_pairs_count(mqstates[threadId]);
+		infos[threadId].length = get_cxd_pairs_count(cxds[threadId]/*mqstates[threadId]*/);
 		infos[threadId].codingPasses = infos[threadId].significantBits * 3 -2;
 	}
 	else {
@@ -961,19 +973,21 @@ void launch_encode(dim3 gridDim, dim3 blockDim, CoefficientState *coeffBuffors, 
 	// Initialize CUDA
 	cudaError_t cuerr;
 
+	CXD *cxds;
+	cuda_d_allocate_mem((void **) &cxds, sizeof(CXD) * codeBlocks);
 	MQEncoder *mqstates;
 	cuda_d_allocate_mem((void **) &mqstates, sizeof(MQEncoder) * codeBlocks);
 
 //	printf("grid %d %d %d\nblock %d %d %d\n", gridDim.x, gridDim.y, gridDim.z, blockDim.x, blockDim.y, blockDim.z);
 
-	g_encode<<<gridDim, blockDim>>>(coeffBuffors, outbuf, cxd_pairs, maxThreadBufforLength, infos, codeBlocks, mqstates);
+	g_encode<<<gridDim, blockDim>>>(coeffBuffors, outbuf, cxd_pairs, maxThreadBufforLength, infos, codeBlocks, mqstates, cxds);
 	cudaThreadSynchronize();
 	if (cuerr = cudaGetLastError()) {
 		printf("g_encode error: %s\n", cudaGetErrorString(cuerr));
 		return;
 	}
 
-	g_lengthCalculation<<<(int) ceil(codeBlocks / 512.0f), 512>>>(infos, codeBlocks, mqstates);
+	g_lengthCalculation<<<(int) ceil(codeBlocks / 512.0f), 512>>>(infos, codeBlocks, mqstates, cxds);
 	cudaThreadSynchronize();
 	if (cuerr = cudaGetLastError()) {
 		printf("g_lengthCalculation error: %s\n", cudaGetErrorString(cuerr));

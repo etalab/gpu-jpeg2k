@@ -128,12 +128,12 @@ void encode_tasks_test(const char *file_name) {
 
 		magconOffset += h_infos[i].width * (h_infos[i].stripeNo + 2);
 
-		printf("%d %d %d %d %d %d %d %d %d %f\n", h_infos[i].width, h_infos[i].height, h_infos[i].nominalWidth,
-				h_infos[i].stripeNo, h_infos[i].subband, h_infos[i].magconOffset, h_infos[i].magbits,
-				h_infos[i].compType, h_infos[i].dwtLevel, h_infos[i].stepSize);
+//		printf("%d %d %d %d %d %d %d %d %d %f\n", h_infos[i].width, h_infos[i].height, h_infos[i].nominalWidth,
+//				h_infos[i].stripeNo, h_infos[i].subband, h_infos[i].magconOffset, h_infos[i].magbits,
+//				h_infos[i].compType, h_infos[i].dwtLevel, h_infos[i].stepSize);
 	}
 
-	binary_printf(mqc_data->cblks[0]->coefficients[0]);
+//	binary_printf(mqc_data->cblks[0]->coefficients[0]);
 
 	cuda_d_allocate_mem((void **) &d_stBuffors, sizeof(GPU_JPEG2K::CoefficientState) * magconOffset);
 	CHECK_ERRORS(cudaMemset((void *) d_stBuffors, 0, sizeof(GPU_JPEG2K::CoefficientState) * magconOffset));

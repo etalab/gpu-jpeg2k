@@ -1217,7 +1217,7 @@ static void t1_encode_cblk(
 		max = int_max(max, tmp);
 	}
 
-	binary_printf(t1->data[0]);
+	//binary_printf(t1->data[0]);
 
 	cblk->numbps = max ? (int_floorlog2(max) + 1) - T1_NMSEDEC_FRACBITS : 0;
 	
@@ -1229,9 +1229,9 @@ static void t1_encode_cblk(
 
 	bpno = cblk->numbps - 1;
 
-	printf("cblk->numbps %d\n", cblk->numbps);
-	printf("bpno %d\n", bpno);
-	binary_printf((1 << (bpno + T1_NMSEDEC_FRACBITS)));
+	//printf("cblk->numbps %d\n", cblk->numbps);
+	//printf("bpno %d\n", bpno);
+	//binary_printf((1 << (bpno + T1_NMSEDEC_FRACBITS)));
 	passtype = 2;
 	
 	mqc_resetstates(mqc);

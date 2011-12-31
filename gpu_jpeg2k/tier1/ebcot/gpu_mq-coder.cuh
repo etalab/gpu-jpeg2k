@@ -35,6 +35,14 @@ struct MQEncoder
 	byte *cxd_pairs;
 };
 
+struct CXD
+{
+	// output decision and context
+        unsigned int dcx_id;
+        // temporary save here decision and context
+        byte *cxd_pairs;
+};
+
 struct MQDecoder : public MQEncoder
 {
 	byte NT;
@@ -116,9 +124,15 @@ __device__ void mqInitEnc(MQEncoder &encoder, byte *outbuf, byte *cxd_pairs)
 	encoder.CT = 12;
 	encoder.L = -1;
 	encoder.outbuf = outbuf;
-	encoder.dcx_id = 0;
-	encoder.cxd_pairs = cxd_pairs;
+	//encoder.dcx_id = 0;
+	//encoder.cxd_pairs = cxd_pairs;
 	encoder.T = 0;
+}
+
+__device__ void cxdPairInit(CXD &cxd_pair, byte *cxd_pairs)
+{
+	cxd_pair.dcx_id = 0;
+	cxd_pair.cxd_pairs = cxd_pairs;
 }
 
 //#define BYTEOUT_OPTIMIZED
@@ -321,6 +335,10 @@ __device__ int get_cxd_pairs_count(MQEncoder &encoder) {
 	return encoder.dcx_id;
 }
 
+__device__ int get_cxd_pairs_count(CXD &cxd_pair) {
+	return cxd_pair.dcx_id;
+}
+
 __device__ int mqFullFlush(MQEncoder &encoder)
 {
 	int Fmin = calcFmin(encoder);
@@ -344,14 +362,18 @@ __device__ void mqEncode(MQEncoder &encoder, int decision, int context)
 //		printf("%d) %d %d\n", encoder.dcx_id, decision, context);
 //	if((context == 0) && (decision == 0))
 //		printf("context = 0\n");	
-	encoder.cxd_pairs[encoder.dcx_id++] = ((unsigned char)((decision << 5) | context));
+//	encoder.cxd_pairs[encoder.dcx_id++] = ((unsigned char)((decision << 5) | context));
 
 	encoder.CX = context;
-
+/*
 	if(decision == GetNthBit(encoder.CXMPS, encoder.CX))
 		codemps(encoder);
 	else
-		codelps(encoder);
+		codelps(encoder);*/
+}
+
+__device__ void save_cxd_pair(CXD &cxd_pair, int decision, int context) {
+	cxd_pair.cxd_pairs[cxd_pair.dcx_id++] = ((unsigned char)((decision << 5) | context));
 }
 
 __device__ void bytein(MQDecoder &decoder)

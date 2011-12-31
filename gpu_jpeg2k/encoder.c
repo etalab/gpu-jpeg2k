@@ -34,8 +34,8 @@
 #include "tier2/codestream.h"
 #include "tier2/write_codestream.h"
 
-//#define GLOBAL_TIME
-#define PART_TIME
+#define GLOBAL_TIME
+//#define PART_TIME
 
 /**
  * @brief Main program entrance.
