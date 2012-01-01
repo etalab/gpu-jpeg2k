@@ -52,7 +52,7 @@ float gpuEncode(EntropyCodingTaskInfo *infos, int count, int targetSize)
 	CodeBlockAdditionalInfo *h_infos = (CodeBlockAdditionalInfo *) malloc(sizeof(CodeBlockAdditionalInfo) * codeBlocks);
 	CodeBlockAdditionalInfo *d_infos;
 
-	cuda_d_allocate_mem((void **) &d_outbuf, sizeof(byte) * codeBlocks * maxOutLength);
+	//cuda_d_allocate_mem((void **) &d_outbuf, sizeof(byte) * codeBlocks * maxOutLength);
 	cuda_d_allocate_mem((void **) &d_cxd_pairs, sizeof(byte) * codeBlocks * maxOutLength);
 	cuda_d_allocate_mem((void **) &d_infos, sizeof(CodeBlockAdditionalInfo) * codeBlocks);
 
@@ -89,12 +89,12 @@ float gpuEncode(EntropyCodingTaskInfo *infos, int count, int targetSize)
 	if(targetSize == 0)
 	{
 		//printf("No pcrd\n");
-		CHECK_ERRORS(GPU_JPEG2K::launch_encode((int) ceil((float) codeBlocks / THREADS), THREADS, d_stBuffors, d_outbuf, d_cxd_pairs, maxOutLength, d_infos, codeBlocks));
+		CHECK_ERRORS(GPU_JPEG2K::launch_encode((int) ceil((float) codeBlocks / THREADS), THREADS, d_stBuffors, NULL/*d_outbuf*/, d_cxd_pairs, maxOutLength, d_infos, codeBlocks));
 	}
 	else
 	{
 		printf("Pcrd\n");
-		CHECK_ERRORS(GPU_JPEG2K::launch_encode_pcrd((int) ceil((float) codeBlocks / THREADS), THREADS, d_stBuffors, d_outbuf, maxOutLength, d_infos, codeBlocks, targetSize));
+		CHECK_ERRORS(GPU_JPEG2K::launch_encode_pcrd((int) ceil((float) codeBlocks / THREADS), THREADS, d_stBuffors, NULL/*d_outbuf*/, maxOutLength, d_infos, codeBlocks, targetSize));
 	}
 
 	cudaEventRecord(end, 0);
@@ -126,7 +126,7 @@ float gpuEncode(EntropyCodingTaskInfo *infos, int count, int targetSize)
 
 //	print_cdx(infos, codeBlocks);
 
-	cuda_d_free(d_outbuf);
+	//cuda_d_free(d_outbuf);
 	cuda_d_free(d_stBuffors);
 	cuda_d_free(d_infos);
 

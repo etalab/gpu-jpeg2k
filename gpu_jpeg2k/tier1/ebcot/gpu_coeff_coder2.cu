@@ -314,11 +314,7 @@ public:
 
 		if((window.c & TRIMASK) == 0)
 		{
-			//if(enc.dcx_id == 24576) {
-                        //	printf("%d) rl1\n", enc.dcx_id);
-                	//}
 			save_cxd_pair(cxd_pair, 0, CX_UNI);
-			//mqEncode(enc, 0, /*CX_RUN*/CX_UNI);
 			rest = -2;
 		}
 		else
@@ -326,15 +322,9 @@ public:
 			while(rest < 4 && ((window.c >> (3 * rest)) & 1) == 0)
 				rest++;
 			
-			//if(enc.dcx_id == 24576) {
-                        //	printf("%d) rl2\n", enc.dcx_id);
-                	//}
 			save_cxd_pair(cxd_pair, 1, CX_UNI);
 			save_cxd_pair(cxd_pair, rest >> 1, CX_RUN);
 			save_cxd_pair(cxd_pair, rest & 1, CX_RUN);
-			//mqEncode(enc, 1, /*CX_RUN*/CX_UNI);
-			//mqEncode(enc, rest >> 1, /*CX_UNI*/CX_RUN);
-			//mqEncode(enc, rest & 1, /*CX_UNI*/CX_RUN);
 		}
 
 		return rest;
@@ -368,11 +358,7 @@ class SigEncodeFunctor {
 public:
 	__device__ void operator()(CtxWindow &window, CtxReg &sig, MQEncoder &enc, CXD &cxd_pair, int stripId, int subband)
 	{
-		//if(enc.dcx_id == 24576) {
-                //       printf("%d) sig\n", enc.dcx_id);
-                //}
 		save_cxd_pair(cxd_pair, (window.c >> (3 * stripId)) & 1, getSPCX(sig, stripId, subband));
-		//mqEncode(enc, (window.c >> (3 * stripId)) & 1, getSPCX(sig, stripId, subband));
 	}
 };
 
@@ -390,11 +376,7 @@ public:
 	__device__ void operator()(CtxWindow &window, CtxReg &sig, MQEncoder &enc, CXD &cxd_pair, int stripId)
 	{
 		unsigned char cx = getSICX(sig, buildCtxReg(window, 13), stripId);
-		//if(enc.dcx_id == 24576) {
-                //        printf("%d) sign\n", enc.dcx_id);
-                //}
 		save_cxd_pair(cxd_pair, (short) (((window.c >> (13 + 3 * stripId)) & 1) ^ ((cx >> 4) & 1)), cx & 0xF);
-		//mqEncode(enc, (short) (((window.c >> (13 + 3 * stripId)) & 1) ^ ((cx >> 4) & 1)), cx & 0xF);
 	}
 };
 
@@ -500,13 +482,7 @@ class MagRefEncodeFunctor {
 public:
 	__device__ void operator()(MQEncoder &enc, CXD &cxd_pair, CtxWindow &window, int stripId)
 	{
-		//if(getMRCX(buildCtxReg(window, 1), window.c, stripId) == 0)
-		//	printf("MRE\n");
-		//if(enc.dcx_id == 24576) {
-		//	printf("%d) mrp\n", enc.dcx_id);
-		//}
 		save_cxd_pair(cxd_pair, (window.c >> (3 * stripId)) & 1, getMRCX(buildCtxReg(window, 1), window.c, stripId));
-		//mqEncode(enc, (window.c >> (3 * stripId)) & 1, getMRCX(buildCtxReg(window, 1), window.c, stripId));
 	}
 };
 
@@ -698,8 +674,8 @@ public:
 	__device__ void operator()(MQEncoder state, CXD cxd_pair, MQEncoder *states, CXD *cxds, unsigned char &stateId, float sum_dist, PcrdCodeblock *pcrdCodeblock)
 	{
 		cxds[stateId] = cxd_pair;
-		states[stateId++] = state;
-		pcrdCodeblock[stateId].dist = sum_dist;
+		//states[stateId++] = state;
+		pcrdCodeblock[stateId++].dist = sum_dist;
 	}
 };
 
@@ -709,7 +685,7 @@ public:
 	__device__ void operator()(MQEncoder state, CXD cxd_pair, MQEncoder *states, CXD *cxds, unsigned char &stateId, float sum_dist, PcrdCodeblock *pcrdCodeblock)
 	{
 		cxds[stateId] = cxd_pair;
-		states[stateId++] = state;
+		//states[stateId++] = state;
 	}
 };
 
@@ -738,7 +714,7 @@ __device__ void encode(CoefficientState *coeffs, byte *out, byte *cxd_pairs, Cod
 	CXD cxd_pair;
 	cxdPairInit(cxd_pair, cxd_pairs);
 	MQEncoder mqenc;
-	mqInitEnc(mqenc, out, cxd_pairs);
+	//mqInitEnc(mqenc, out, cxd_pairs);
 				
 	unsigned char sid = 0;
 	float sum_dist = 0.0f;
@@ -748,7 +724,7 @@ __device__ void encode(CoefficientState *coeffs, byte *out, byte *cxd_pairs, Cod
 
 	if(info.significantBits > 0)
 	{
-		mqResetEnc(mqenc);
+		//mqResetEnc(mqenc);
 		
 		initCoeffs(info, coeffs);
 		
@@ -761,7 +737,7 @@ __device__ void encode(CoefficientState *coeffs, byte *out, byte *cxd_pairs, Cod
 		<CleanUpPassFunctor<RLEncodeFunctor, SigEncodeFunctor, SignEncodeFunctor, MQEncoder>, MQEncoder >
 			(info, coeffs, mqenc, cxd_pair, &sum_dist, info.significantBits - 1);
 
-		PostPassFunctor()(mqenc, cxd_pair, states, cxds, sid, sum_dist, pcrdCodeblock);
+		PostPassFunctor()(mqenc, cxd_pair, NULL/*states*/, cxds, sid, sum_dist, pcrdCodeblock);
 		
 		for(unsigned char i = 1; i < info.significantBits; i++)
 		{
@@ -773,23 +749,23 @@ __device__ void encode(CoefficientState *coeffs, byte *out, byte *cxd_pairs, Cod
 			<SigPropPassFunctor<SigEncodeFunctor, SignEncodeFunctor, MQEncoder>, MQEncoder >
 				(info, coeffs, mqenc, cxd_pair, &sum_dist, info.significantBits - i - 1);
 
-			PostPassFunctor()(mqenc, cxd_pair, states, cxds, sid, sum_dist, pcrdCodeblock);
+			PostPassFunctor()(mqenc, cxd_pair, NULL/*states*/, cxds, sid, sum_dist, pcrdCodeblock);
 
 			BITPLANE_WINDOW_SCAN
 			<MagRefPassFunctor<MagRefEncodeFunctor, MQEncoder>, MQEncoder >
 				(info, coeffs, mqenc, cxd_pair, &sum_dist, info.significantBits - i - 1);
 
-			PostPassFunctor()(mqenc, cxd_pair, states, cxds, sid, sum_dist, pcrdCodeblock);
+			PostPassFunctor()(mqenc, cxd_pair, NULL/*states*/, cxds, sid, sum_dist, pcrdCodeblock);
 
 			BITPLANE_WINDOW_SCAN
 			<CleanUpPassFunctor<RLEncodeFunctor, SigEncodeFunctor, SignEncodeFunctor, MQEncoder>, MQEncoder >
 				(info, coeffs, mqenc, cxd_pair, &sum_dist, info.significantBits - i - 1);
 
-			PostPassFunctor()(mqenc, cxd_pair, states, cxds, sid, sum_dist, pcrdCodeblock);
+			PostPassFunctor()(mqenc, cxd_pair, NULL/*states*/, cxds, sid, sum_dist, pcrdCodeblock);
 		}
 
-		PostCodingFunctor()(mqenc, cxd_pair, states, cxds, sid, sum_dist, pcrdCodeblock);
-		mqFlush(mqenc);
+		PostCodingFunctor()(mqenc, cxd_pair, NULL/*states*/, cxds, sid, sum_dist, pcrdCodeblock);
+		//mqFlush(mqenc);
 	}
 }
 
