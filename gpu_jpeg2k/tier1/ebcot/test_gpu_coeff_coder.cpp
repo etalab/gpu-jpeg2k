@@ -55,14 +55,12 @@ void encode_tasks_test(const char *file_name) {
 
 	printf("codeBlocks %d %d\n", codeBlocks, mqc_data->cblks[0]->cxd_count);
 
-	byte *d_outbuf;
 	byte *d_cxd_pairs;
 	GPU_JPEG2K::CoefficientState *d_stBuffors;
 
 	CodeBlockAdditionalInfo *h_infos = (CodeBlockAdditionalInfo *) malloc(sizeof(CodeBlockAdditionalInfo) * codeBlocks);
 	CodeBlockAdditionalInfo *d_infos;
 
-	cuda_d_allocate_mem((void **) &d_outbuf, sizeof(byte) * codeBlocks * maxOutLength);
 	cuda_d_allocate_mem((void **) &d_cxd_pairs, sizeof(byte) * codeBlocks * maxOutLength);
 	cuda_d_allocate_mem((void **) &d_infos, sizeof(CodeBlockAdditionalInfo) * codeBlocks);
 
@@ -140,7 +138,7 @@ void encode_tasks_test(const char *file_name) {
 
 	cuda_memcpy_htd(h_infos, d_infos, sizeof(CodeBlockAdditionalInfo) * codeBlocks);
 
-	CHECK_ERRORS(GPU_JPEG2K::launch_encode((int) ceil((float) codeBlocks / THREADS), THREADS, d_stBuffors, d_outbuf, d_cxd_pairs, maxOutLength, d_infos, codeBlocks));
+	CHECK_ERRORS(GPU_JPEG2K::launch_encode((int) ceil((float) codeBlocks / THREADS), THREADS, d_stBuffors, d_cxd_pairs, maxOutLength, d_infos, codeBlocks));
 
 	byte *h_cxd_pairs = NULL;
 	cuda_h_allocate_mem((void **) &h_cxd_pairs, sizeof(byte) * codeBlocks * maxOutLength);

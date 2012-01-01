@@ -292,7 +292,7 @@ __device__ float getDISW(CodeBlockAdditionalInfo *info)
 	return distWeights[info->compType][min<byte>(info->dwtLevel, 3)][info->subband] * info->stepSize * info->stepSize / ((float)(info->width * info->height));
 }
 
-__device__ void binary_printf(unsigned int in)
+/*__device__ void binary_printf(unsigned int in)
 {
 	for(int i = 0; i < 32; i++) {
 		if((in >> (31 - i)) & 1)
@@ -304,7 +304,7 @@ __device__ void binary_printf(unsigned int in)
 	}
 
 	printf("\n");
-}
+}*/
 
 class RLEncodeFunctor {
 public:
@@ -690,7 +690,7 @@ public:
 };
 
 template <class PostPassFunctor, class PostCodingFunctor>
-__device__ void encode(CoefficientState *coeffs, byte *out, byte *cxd_pairs, CodeBlockAdditionalInfo &info, MQEncoder *states, CXD *cxds, PcrdCodeblock *pcrdCodeblock = NULL)
+__device__ void encode(CoefficientState *coeffs, byte *cxd_pairs, CodeBlockAdditionalInfo &info, MQEncoder *states, CXD *cxds, PcrdCodeblock *pcrdCodeblock = NULL)
 {
 	unsigned char leastSignificantBP = 31 - info.magbits;
 
@@ -817,7 +817,7 @@ __device__ void decode(CoefficientState *coeffs, CodeBlockAdditionalInfo &info, 
 	}
 }
 
-__global__ void g_encode(CoefficientState *coeffBuffors, byte *outbuf, byte *cxd_pairs, int maxThreadBufforLength, CodeBlockAdditionalInfo *infos, int codeBlocks, MQEncoder *mqstates, CXD *cxds)
+__global__ void g_encode(CoefficientState *coeffBuffors, byte *cxd_pairs, int maxThreadBufforLength, CodeBlockAdditionalInfo *infos, int codeBlocks, MQEncoder *mqstates, CXD *cxds)
 {
 	int threadId = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -827,13 +827,13 @@ __global__ void g_encode(CoefficientState *coeffBuffors, byte *outbuf, byte *cxd
 	CodeBlockAdditionalInfo info = infos[threadId];
 
 	info.length = 0;
-	encode<PCRD_EmptyFunctor, CollectMQStatesFunctor>(coeffBuffors + info.magconOffset, outbuf + threadId * maxThreadBufforLength, cxd_pairs + threadId * maxThreadBufforLength, info, mqstates + threadId, cxds + threadId);
+	encode<PCRD_EmptyFunctor, CollectMQStatesFunctor>(coeffBuffors + info.magconOffset, cxd_pairs + threadId * maxThreadBufforLength, info, mqstates + threadId, cxds + threadId);
 
 	infos[threadId].significantBits = info.significantBits;
 	infos[threadId].length = info.length;
 }
 
-__global__ void g_encode_pcrd(CoefficientState *coeffBuffors, byte *outbuf, int maxThreadBufforLength, CodeBlockAdditionalInfo *infos, int codeBlocks, MQEncoder *mqstates, int maxStatesPerCodeblock, PcrdCodeblock *pcrdCodeblocks)
+__global__ void g_encode_pcrd(CoefficientState *coeffBuffors, int maxThreadBufforLength, CodeBlockAdditionalInfo *infos, int codeBlocks, MQEncoder *mqstates, int maxStatesPerCodeblock, PcrdCodeblock *pcrdCodeblocks)
 {
 	int threadId = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -843,7 +843,7 @@ __global__ void g_encode_pcrd(CoefficientState *coeffBuffors, byte *outbuf, int 
 	CodeBlockAdditionalInfo info = infos[threadId];
 
 	info.length = 0;
-	encode<PCRD_CollectMQStatesFunctor, PCRD_EmptyFunctor>(coeffBuffors + info.magconOffset, outbuf + threadId * maxThreadBufforLength, NULL, info, mqstates + threadId * maxStatesPerCodeblock, NULL, pcrdCodeblocks + threadId * maxStatesPerCodeblock);
+	encode<PCRD_CollectMQStatesFunctor, PCRD_EmptyFunctor>(coeffBuffors + info.magconOffset, NULL, info, mqstates + threadId * maxStatesPerCodeblock, NULL, pcrdCodeblocks + threadId * maxStatesPerCodeblock);
 
 	infos[threadId].significantBits = info.significantBits;
 	infos[threadId].length = info.length;
@@ -944,7 +944,7 @@ __global__ void g_decode(CoefficientState *coeffBuffors, byte *inbuf, int maxThr
 
 #include <stdio.h>
 
-void launch_encode(dim3 gridDim, dim3 blockDim, CoefficientState *coeffBuffors, byte *outbuf, byte *cxd_pairs, int maxThreadBufforLength, CodeBlockAdditionalInfo *infos, int codeBlocks)
+void launch_encode(dim3 gridDim, dim3 blockDim, CoefficientState *coeffBuffors, byte *cxd_pairs, int maxThreadBufforLength, CodeBlockAdditionalInfo *infos, int codeBlocks)
 {
 	// Initialize CUDA
 	cudaError_t cuerr;
@@ -956,7 +956,7 @@ void launch_encode(dim3 gridDim, dim3 blockDim, CoefficientState *coeffBuffors, 
 
 //	printf("grid %d %d %d\nblock %d %d %d\n", gridDim.x, gridDim.y, gridDim.z, blockDim.x, blockDim.y, blockDim.z);
 
-	g_encode<<<gridDim, blockDim>>>(coeffBuffors, outbuf, cxd_pairs, maxThreadBufforLength, infos, codeBlocks, mqstates, cxds);
+	g_encode<<<gridDim, blockDim>>>(coeffBuffors, cxd_pairs, maxThreadBufforLength, infos, codeBlocks, mqstates, cxds);
 	cudaThreadSynchronize();
 	if (cuerr = cudaGetLastError()) {
 		printf("g_encode error: %s\n", cudaGetErrorString(cuerr));
@@ -973,11 +973,11 @@ void launch_encode(dim3 gridDim, dim3 blockDim, CoefficientState *coeffBuffors, 
 	cuda_d_free(mqstates);
 }
 
-void _launch_encode_pcrd(dim3 gridDim, dim3 blockDim, CoefficientState *coeffBuffors, byte *outbuf, int maxThreadBufforLength, CodeBlockAdditionalInfo *infos, int codeBlocks, const int maxMQStatesPerCodeBlock, PcrdCodeblock *pcrdCodeblocks, PcrdCodeblockInfo *pcrdCodeblockInfos) {
+void _launch_encode_pcrd(dim3 gridDim, dim3 blockDim, CoefficientState *coeffBuffors, int maxThreadBufforLength, CodeBlockAdditionalInfo *infos, int codeBlocks, const int maxMQStatesPerCodeBlock, PcrdCodeblock *pcrdCodeblocks, PcrdCodeblockInfo *pcrdCodeblockInfos) {
 	MQEncoder *mqstates;
 	cuda_d_allocate_mem((void **) &mqstates, sizeof(MQEncoder) * codeBlocks * maxMQStatesPerCodeBlock);
 
-	g_encode_pcrd<<<gridDim, blockDim>>>(coeffBuffors, outbuf, maxThreadBufforLength, infos, codeBlocks, mqstates, maxMQStatesPerCodeBlock, pcrdCodeblocks);
+	g_encode_pcrd<<<gridDim, blockDim>>>(coeffBuffors, maxThreadBufforLength, infos, codeBlocks, mqstates, maxMQStatesPerCodeBlock, pcrdCodeblocks);
 
 	g_lengthCalculation_pcrd<<<(int) ceil(codeBlocks / 512.0f), 512>>>(infos, codeBlocks, mqstates, maxMQStatesPerCodeBlock, pcrdCodeblocks, pcrdCodeblockInfos);
 

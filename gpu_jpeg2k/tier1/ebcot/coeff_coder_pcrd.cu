@@ -236,7 +236,7 @@ void launch_pcrd(int maxStatesPerCodeBlock, int targetSize, float slopeMax, int 
 	} while(countRefine < 20 && iterations < 50);
 }
 
-void launch_encode_pcrd(dim3 gridDim, dim3 blockDim, CoefficientState *coeffBuffors, byte *outbuf, int maxThreadBufforLength, CodeBlockAdditionalInfo *infos, int codeBlocks, int targetSize)
+void launch_encode_pcrd(dim3 gridDim, dim3 blockDim, CoefficientState *coeffBuffors, int maxThreadBufforLength, CodeBlockAdditionalInfo *infos, int codeBlocks, int targetSize)
 {
 	const int maxMQStatesPerCodeBlock = (MAX_MAG_BITS - 1) * 3 + 1;
 
@@ -247,7 +247,7 @@ void launch_encode_pcrd(dim3 gridDim, dim3 blockDim, CoefficientState *coeffBuff
 	cuda_d_allocate_mem((void **) &pcrdCodeblocks, sizeof(PcrdCodeblock) * codeBlocks * maxMQStatesPerCodeBlock);
 	cuda_d_memset((void *)pcrdCodeblocks, 0, sizeof(PcrdCodeblock) * codeBlocks * maxMQStatesPerCodeBlock);
 
-	_launch_encode_pcrd(gridDim, blockDim, coeffBuffors, outbuf, maxThreadBufforLength, infos, codeBlocks, maxMQStatesPerCodeBlock, pcrdCodeblocks, pcrdCodeblockInfos);
+	_launch_encode_pcrd(gridDim, blockDim, coeffBuffors, maxThreadBufforLength, infos, codeBlocks, maxMQStatesPerCodeBlock, pcrdCodeblocks, pcrdCodeblockInfos);
 
 	float *dSlopeMax;
 	cuda_d_allocate_mem((void**)&dSlopeMax, sizeof(float));

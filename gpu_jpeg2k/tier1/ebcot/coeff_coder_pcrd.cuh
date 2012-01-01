@@ -12,7 +12,7 @@
 
 namespace GPU_JPEG2K
 {
-void launch_encode_pcrd(dim3 gridDim, dim3 blockDim, CoefficientState *coeffBuffors, byte *outbuf, int maxThreadBufforLength, CodeBlockAdditionalInfo *infos, int codeBlocks, int targetSize);
+void launch_encode_pcrd(dim3 gridDim, dim3 blockDim, CoefficientState *coeffBuffors, int maxThreadBufforLength, CodeBlockAdditionalInfo *infos, int codeBlocks, int targetSize);
 }
 
 #endif /* COEFF_CODER_PCRD_CUH_ */
