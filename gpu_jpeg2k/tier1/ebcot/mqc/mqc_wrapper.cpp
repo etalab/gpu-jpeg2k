@@ -18,7 +18,7 @@ extern "C" {
 }
 
 static void mqc_gpu_encode_(EntropyCodingTaskInfo *infos, CodeBlockAdditionalInfo* mqc_data, int codeBlocks,
-		unsigned char* d_cxds, const char* param = 0, const char* name_suffix = 0) {
+		unsigned char* d_cxds, int maxOutLength, const char* param = 0, const char* name_suffix = 0) {
 	// Initialize CUDA
 	cudaError cuerr = cudaSuccess;
 
@@ -36,7 +36,7 @@ static void mqc_gpu_encode_(EntropyCodingTaskInfo *infos, CodeBlockAdditionalInf
 		cxd_blocks[cxd_block_index].byte_begin = byte_index;
 		cxd_blocks[cxd_block_index].byte_count = cxd_get_buffer_size(cxd_blocks[cxd_block_index].cxd_count);
 
-		cxd_index += cxd_blocks[cxd_block_index].cxd_count;
+		cxd_index += /*cxd_blocks[cxd_block_index].cxd_count*/maxOutLength;
 		byte_index += cxd_blocks[cxd_block_index].byte_count;
 		cxd_block_index++;
 	}
@@ -143,6 +143,8 @@ void mqc_gpu_encode_test() {
 		return;
 	}
 
+	int maxOutLength = (4096 * 10);
+
     // Initialize CUDA
     cudaError cuerr = cudaSuccess;
 
@@ -156,13 +158,15 @@ void mqc_gpu_encode_test() {
     }
 
     // Allocate CPU memory for CX,D pairs
-    int cxd_size = cxd_array_size(cxd_count);
+//    int cxd_size = cxd_array_size(cxd_count);
+    int cxd_size = mqc_data->cblk_count * maxOutLength;
     unsigned char* cxds = new unsigned char[cxd_size];
     memset(cxds,0,cxd_size);
     // Fill CPU memory with CX,D pairs
-    int index = 0;
+
     for ( int cblk_index = 0; cblk_index < mqc_data->cblk_count; cblk_index++ ) {
         struct mqc_data_cblk* cblk = mqc_data->cblks[cblk_index];
+        int index = cblk_index * maxOutLength;
         for ( int cxd_index = 0; cxd_index < cblk->cxd_count; cxd_index++ ) {
             cxd_array_put(cxds, index, cblk->cxds[cxd_index].cx, cblk->cxds[cxd_index].d);
             index++;
@@ -189,7 +193,7 @@ void mqc_gpu_encode_test() {
 
     EntropyCodingTaskInfo *infos = (EntropyCodingTaskInfo *) malloc(sizeof(EntropyCodingTaskInfo) * codeBlocks);
 
-	mqc_gpu_encode_(infos, h_infos, codeBlocks, d_cxds);
+	mqc_gpu_encode_(infos, h_infos, codeBlocks, d_cxds, maxOutLength);
 
 	// Check output bytes
 	int cblk_index;
@@ -228,7 +232,7 @@ void mqc_gpu_encode(EntropyCodingTaskInfo *infos, CodeBlockAdditionalInfo* h_inf
 // Initialize CUDA
 	cudaError cuerr = cudaSuccess;
 
-	int cxd_count = 0;
+/*	int cxd_count = 0;
 
 	for (int i = 0; i < codeBlocks; ++i) {
 		cxd_count += h_infos[i].length > 0 ? h_infos[i].length : 0;
@@ -258,10 +262,10 @@ void mqc_gpu_encode(EntropyCodingTaskInfo *infos, CodeBlockAdditionalInfo* h_inf
 			}
 			cxd_idx += h_infos[i].length;
 		}
-	}
+	}*/
 
-	mqc_gpu_encode_(infos, h_infos, codeBlocks, d_cxds);
+	mqc_gpu_encode_(infos, h_infos, codeBlocks, /*d_cxds*/d_cxd_pairs, maxOutLength);
 //	mqc_gpu_encode_test();
 
-	cudaFree((void *)d_cxds);
+//	cudaFree((void *)d_cxds);
 }

@@ -3,7 +3,7 @@
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 
-#define THREADS 256
+#define THREADS 32
 #define MAX_MAG_BITS 20
 
 typedef struct
