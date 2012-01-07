@@ -12,6 +12,7 @@ extern"C" {
 }
 
 #include "tier1/ebcot/test_gpu_coeff_coder.h"
+#include "tier1/bpc/test_gpu_bpc.h"
 
 int main(int argc, char **argv)
 {
@@ -20,7 +21,8 @@ int main(int argc, char **argv)
 //	dbg_fiwt_1d();
 //	dbg_wt();
 //	dbg_quantization();
-	encode_tasks_test(argv[1]);
+//	encode_tasks_test(argv[1]);
+	encode_bpc_test(argv[1]);
 
 	return 0;
 }

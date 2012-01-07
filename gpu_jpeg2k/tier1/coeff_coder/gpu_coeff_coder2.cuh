@@ -3,6 +3,13 @@
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 
+#ifdef __CDT_PARSER__
+#define __global__
+#define __device__
+#define __constant__
+#define __shared__
+#endif
+
 #define THREADS 256
 #define MAX_MAG_BITS 20
 

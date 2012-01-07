@@ -15,6 +15,7 @@ SET(CUDA_VERBOSE_BUILD ON)
 include_directories(${FREEIMAGE_INCLUDE_PATH})
 
 add_subdirectory(tier1/coeff_coder)
+add_subdirectory(tier1/bpc)
 add_subdirectory(tier1/ebcot)
 add_subdirectory(tier1/ebcot/mqc)
 add_subdirectory(tier1/ebcot/mqc/library/openjpeg)
@@ -93,6 +94,7 @@ config
 types
 tier1
 ebcot
+gpu_bpc
 mqc
 openjpeg
 tier2
