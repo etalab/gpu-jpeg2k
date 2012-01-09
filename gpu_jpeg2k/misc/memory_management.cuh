@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
+extern void cuda_set_device_flags();
 extern void cuda_h_allocate_mem(void **data, uint64_t memSize);
 extern void cuda_d_allocate_mem(void **data, uint64_t memSize);
 extern void cuda_memcpy_hth(void *src, void *dst, uint64_t size);

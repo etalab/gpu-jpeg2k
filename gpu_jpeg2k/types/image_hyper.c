@@ -85,6 +85,8 @@ int read_hyper_image(type_image **_container, type_parameters *param)
 		return -1;
 	}
 
+	//save_img_hyper(container, "cuprite_raw.raw");
+
 	int band_size = container->width * container->height;
 
 //	println_var(INFO, "Loaded %s: x:%d y:%d channels:%d depth:%d ", bsq_path, container->width, container->height,
@@ -119,10 +121,16 @@ void save_img_hyper(type_image *img, const char* out_file)
 	int i, c, x, y;
 	type_tile *tile;
 	type_tile_comp *tile_comp;
+	char** msg = (char**)calloc(1,sizeof(char*));
 
-	char *type_short_int;
+	float *type_float;
 
-	type_short_int = (char *) malloc(img->width * img->height * img->num_components * sizeof(short));
+	type_float = (float *) malloc(img->width * img->height * img->num_components * sizeof(float));
+
+	if(type_float == NULL) {
+		asprintf(msg, "Could not allocate data!");
+		perror(*msg);
+	}
 
 	int scan_width = img->width;
 
@@ -138,8 +146,8 @@ void save_img_hyper(type_image *img, const char* out_file)
 					* sizeof(type_data));
 			for (x = 0; x < tile_comp->width; x++) {
 				for (y = 0; y < tile_comp->height; y++) {
-					type_short_int[(tile->tly + y) * tile_comp->width + (tile->tlx + x) + c * tile_comp->width * tile_comp->height]
-							= (char)tile_comp->img_data[x + y * tile_comp->width];
+					type_float[(tile->tly + y) * tile_comp->width + (tile->tlx + x) + c * tile_comp->width * tile_comp->height]
+							= tile_comp->img_data[x + y * tile_comp->width];
 				}
 			}
 		}
@@ -148,7 +156,31 @@ void save_img_hyper(type_image *img, const char* out_file)
 	/* Read output file */
 	FILE *out_fp = fopen(out_file, "wb");
 
-	fwrite(type_short_int, sizeof(char), img->width * img->height * img->num_components, out_fp);
+	printf("%d %d %d\n", img->width, img->height, img->num_components);
+
+	if(fwrite((void*)&(img->num_components), sizeof(unsigned short int), 1, out_fp)!=1) {
+		asprintf(msg, "Read component");
+		perror(*msg);
+		return;
+	}
+
+	if(fwrite((void*)&(img->width), sizeof(unsigned short int), 1, out_fp)!=1) {
+		asprintf(msg, "Read component");
+		perror(*msg);
+		return;
+	}
+
+	if(fwrite((void*)&(img->height), sizeof(unsigned short int), 1, out_fp)!=1) {
+		asprintf(msg, "Read component");
+		perror(*msg);
+		return;
+	}
+
+	if(fwrite(type_float, sizeof(float), img->width * img->height * img->num_components, out_fp)!=img->width * img->height * img->num_components) {
+		asprintf(msg, "Read component");
+		perror(*msg);
+		return;
+	}
 
 	fclose(out_fp);
 }

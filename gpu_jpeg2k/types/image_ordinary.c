@@ -235,7 +235,7 @@ long int read_ordinary_image(type_image **_container, type_parameters *param)
 			}
 		}
 
-		cudaThreadSynchronize();
+//		cudaThreadSynchronize();
 		copy_time = stop_measure(start_copy);
 
 /*		char buff[128];

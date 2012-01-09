@@ -6,8 +6,8 @@ FIND_PACKAGE(FreeImage)
 
 #Uncomment next line to enable debugging (for use with cuda-gdb)
 #SET(CUDA_NVCC_FLAGS -g -G --compiler-options -fpermissive)
-SET(CMAKE_CXX_FLAGS "-O3")
-SET(CMAKE_CC_FLAGS "-O3")
+SET(CMAKE_CXX_FLAGS "-O3 -fno-builtin")
+SET(CMAKE_CC_FLAGS "-O3 -fno-builtin")
 SET(CUDA_NVCC_FLAGS -O3 --compiler-options -fpermissive -arch sm_20 --maxrregcount 64 --ptxas-options=-v)
 #SET(CUDA_NVCC_FLAGS --compiler-options -fpermissive -arch sm_20 --maxrregcount 64 --ptxas-options=-v)
 SET(CUDA_VERBOSE_BUILD ON)
@@ -37,8 +37,8 @@ encoder.c)
 TARGET_LINK_LIBRARIES( encoder 
 ${FREEIMAGE_LIBRARY} 
 m
-#gpu_coeff_coder 
-ebcot
+gpu_coeff_coder 
+#ebcot
 config
 dwt
 klt

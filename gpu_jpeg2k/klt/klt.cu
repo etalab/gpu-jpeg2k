@@ -18,7 +18,7 @@ extern "C" {
 #define MCT_DROP_COMPONENTS
 #define MCT_TRANSFORM_DATA
 //#define MCT_FREEUP_COMPONENTS // now i know it is part of larger block and it is advised not to free this memory at this point xP
-//#define PART_TIME
+#define PART_TIME
 
 void encode_klt(type_parameters *param, type_image *img) {
 //	checkCUDAError("before MCT");
@@ -52,14 +52,14 @@ void encode_klt(type_parameters *param, type_image *img) {
 
 	/* mean adjust components data */
 
-	checkCUDAError("before adjust");
+//	checkCUDAError("before adjust");
 	type_data* means;
 	cuda_h_allocate_mem((void **) &means, sizeof(type_data)*img->num_components);
 #ifdef MCT_MEAN_ADJUST_DATA
 //	mean_adjust_data(img, data_pd, means);
 	mean_adjust_data_new(img, data_p, means);
 #endif
-	checkCUDAError("after mean adjust");
+//	checkCUDAError("after mean adjust");
 //	println_var(INFO, "after mans adjust");
 	
 #ifdef PART_TIME
@@ -83,17 +83,17 @@ void encode_klt(type_parameters *param, type_image *img) {
 	cuda_h_allocate_mem((void**) &eValues, img->num_components * sizeof(type_data));
 	type_data* output; 
 	cuda_h_allocate_mem((void**) &output, img->num_components * img->num_components * sizeof(type_data));
-	checkCUDAError("after calulation cov matrix");
+//	checkCUDAError("after calulation cov matrix");
 //	println_var(INFO, "after calculation cov matrix");
 
-	cublasStatus status;
-	status = cublasInit();
-	if (status != CUBLAS_STATUS_SUCCESS) {
-		println_var(INFO, "ERROR Cublas Init Error with status %d", status);
-		checkCUDAError("cublas init error");
-		return;
-	}
-	checkCUDAError("after cublas init");
+//	cublasStatus status;
+//	status = cublasInit();
+//	if (status != CUBLAS_STATUS_SUCCESS) {
+//		println_var(INFO, "ERROR Cublas Init Error with status %d", status);
+//		checkCUDAError("cublas init error");
+//		return;
+//	}
+//	checkCUDAError("after cublas init");
 //	println_var(INFO, "after cublas init");
 
 #ifdef PART_TIME
@@ -120,7 +120,7 @@ void encode_klt(type_parameters *param, type_image *img) {
 
 	/* looking for components to drop */
 
-	checkCUDAError("after gs");
+//	checkCUDAError("after gs");
 //	println_var(INFO, "after gs");
 	int i,odciecie = 0;
 	type_data max = eValues[0];
@@ -151,7 +151,7 @@ void encode_klt(type_parameters *param, type_image *img) {
 
 	/* preparing transform matrix */
 
-	checkCUDAError("before prepare transform matrix");
+//	checkCUDAError("before prepare transform matrix");
 //	println_var(INFO, "before prepare transform matrix");
 	type_data* transform;
 	type_data* transform_d;
@@ -182,7 +182,7 @@ void encode_klt(type_parameters *param, type_image *img) {
 #endif
 	/* adjusting data */
 
-	checkCUDAError("before data adjust");
+//	checkCUDAError("before data adjust");
 #ifdef PART_TIME
 	cudaThreadSynchronize();
 	printf("adj data1: %ld\n", stop_measure(start_adj_data_1));
@@ -203,17 +203,17 @@ void encode_klt(type_parameters *param, type_image *img) {
 	long int start_adj_data_3;
 	start_adj_data_3 = start_measure();
 #endif
-	checkCUDAError("after data adjust");
+//	checkCUDAError("after data adjust");
 //	println_var(INFO, "after data adjust");
 
-	status = cublasShutdown();
+/*	status = cublasShutdown();
 	if (status != CUBLAS_STATUS_SUCCESS) {
 		println_var(INFO, "ERROR Cublas Shutdown Error with status %d", status);
 		checkCUDAError("cublas shutdown error");
 		return;
-	}
+	}*/
 
-	checkCUDAError("after cublas shutdown");
+//	checkCUDAError("after cublas shutdown");
 //	println_var(INFO, "after cublas shutdown");
 #ifdef PART_TIME
 	cudaThreadSynchronize();
@@ -231,7 +231,7 @@ void encode_klt(type_parameters *param, type_image *img) {
 	for(int i=img->num_components - odciecie; i < img->num_components; ++i) {
 		cuda_d_free(data_p[i]);
 	}
-	checkCUDAError("after component dropping");
+//	checkCUDAError("after component dropping");
 //	println_var(INFO, "after component dropping");
 
 	/* crating segments for decoding purposes */
@@ -309,7 +309,7 @@ void encode_klt(type_parameters *param, type_image *img) {
 	//println_var(INFO, "Time of MCT processing %f", ((double)clock() - start)/ CLOCKS_PER_SEC);
 //	printf("%ld\n", stop_measure(start_klt));
 //	println_var(INFO, "MCT %d components droped", odciecie);
-	checkCUDAError("after MCT");
+//	checkCUDAError("after MCT");
 //	println_var(INFO, "after MCT");
 }
 

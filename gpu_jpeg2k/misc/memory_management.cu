@@ -28,8 +28,20 @@ void cuda_d_free(void *data)
 
 void cuda_h_free(void *data) {
 	cudaFreeHost(data);
-	checkCUDAError("cuda_h_free");
+//	checkCUDAError("cuda_h_free");
 }
+
+void cuda_set_device_flags() {
+	cudaDeviceProp prop;
+	cudaGetDeviceProperties(&prop, 0);
+	cudaSetDeviceFlags(cudaDeviceMapHost);
+
+	if (!prop.canMapHostMemory) {
+		printf("[allocate_mem]: Cannot allocate host-device mapped memory. Exitting!\n");
+		exit(0);
+	}
+}
+
 /**
  * @brief Allocates host page locked memory.
  *
@@ -39,19 +51,19 @@ void cuda_h_free(void *data) {
  */
 void cuda_h_allocate_mem(void **data, uint64_t mem_size)
 {
-	/* //MAPPED memory test - FAILURE!
-	cudaDeviceProp prop;
+	//MAPPED memory test - FAILURE!
+/*	cudaDeviceProp prop;
 	cudaGetDeviceProperties(&prop, 0);
 	cudaSetDeviceFlags(cudaDeviceMapHost);
 
 	if (!prop.canMapHostMemory) {
 		printf("[allocate_mem]: Cannot allocate host-device mapped memory. Exitting!\n");
 		exit(0);
-	}
-	cudaHostAlloc(data, memSize, cudaHostAllocMapped);
-	*/
+	}*/
+	cudaHostAlloc(data, mem_size, cudaHostAllocMapped);
+
 //	println_var(INFO, "allocating: %i [kB]\n", mem_size/1024);
-	cudaHostAlloc(data, mem_size, cudaHostAllocPortable);
+	/*cudaHostAlloc(data, mem_size, cudaHostAllocPortable);*/
 
 	checkCUDAError("cuda_h_allocate_mem");
 }
@@ -76,7 +88,7 @@ void cuda_memcpy_hth(void *src, void *dst, uint64_t size) {
 }
 
 void cuda_memcpy_htd(void *src, void *dst, uint64_t size) {
-	cudaMemcpy(dst, src, size, cudaMemcpyHostToDevice);
+	cudaMemcpyAsync(dst, src, size, cudaMemcpyHostToDevice);
 	checkCUDAError("cuda_memcpy_htd");
 }
 

@@ -155,7 +155,7 @@ type_data reduction(type_data *d_i_data, type_data *d_o_data, type_data *h_odata
 
 	/* sum up all */
 	graph_reduce(numThreads, numBlocks, d_i_data, d_o_data, size);
-	checkCUDAError("\tafter reduce");
+//	checkCUDAError("\tafter reduce");
 
 	cuda_memcpy_dth(d_o_data, h_odata, numBlocks * sizeof(type_data));
 
