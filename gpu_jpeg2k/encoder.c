@@ -149,7 +149,7 @@ int main(int argc, char **argv)
 	long int start_cd;
 	start_cd = start_measure();
 #endif
-	/* Write Codestream */
+	// Write Codestream
 	write_codestream(img);
 
 #ifdef PART_TIME
@@ -158,7 +158,7 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef GLOBAL_TIME
-	printf("%ld\n", stop_measure(start_global)/* + copy_time*/);
+	printf("%ld\n", stop_measure(start_global));
 #endif
 
 	free(img);

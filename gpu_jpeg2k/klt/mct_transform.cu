@@ -43,7 +43,7 @@ void mct_transform_new(type_image *img, type_data* transform_d, type_data **data
 	type_data* data_d;
 	type_data* inter_d;
 	cuda_d_allocate_mem((void **) &data_d, num_vecs * len_vec * sizeof(type_data));
-	cuda_d_allocate_mem((void **) &inter_d, num_vecs * (len_vec - odciecie) * sizeof(type_data));
+	cuda_d_allocate_mem((void **) &inter_d, num_vecs * len_vec * sizeof(type_data));
 
 	int blocks = (num_vecs + (THREADS - 1))/THREADS;
 
@@ -51,9 +51,12 @@ void mct_transform_new(type_image *img, type_data* transform_d, type_data **data
 
 	for(i = 0; i < num_vecs; ++i) {
 		type_data *i_vec = data_d + i * len_vec;
-		type_data *o_vec = inter_d + i * (len_vec - odciecie);
+		type_data *o_vec = inter_d + i * len_vec;
 		adjust_pca_data_mv(transform_d, FORWARD, i_vec, o_vec, len_vec, len_vec);
 	}
 
-	writeSamples<<<blocks, THREADS>>>(data_pd, num_vecs, len_vec - odciecie, inter_d);
+	writeSamples<<<blocks, THREADS>>>(data_pd, num_vecs, len_vec, inter_d);
+
+	cuda_d_free(data_d);
+	cuda_d_free(inter_d);
 }
