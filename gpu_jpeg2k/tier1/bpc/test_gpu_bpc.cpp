@@ -94,7 +94,7 @@ void encode_bpc_test(const char *file_name) {
 		max = 0;
 		for(int j = 0; j < cblk->w; ++j) {
 			for(int k = 0; k < cblk->h; ++k) {
-				int cache_value = (cblk->coefficients[k * cblk->w + j]) << (31 - 10 - h_infos[i].magbits);
+				int cache_value = (cblk->coefficients[k * cblk->w + j]) << (31 - 6 - h_infos[i].magbits);
 				cblk->coefficients[k * cblk->w + j] = cache_value < 0 ? (1 << 31) | (-cache_value) : cache_value;
 				binary_printf(cblk->coefficients[k * cblk->w + j]);
 				if(cblk->coefficients[k * cblk->w + j] > max)
