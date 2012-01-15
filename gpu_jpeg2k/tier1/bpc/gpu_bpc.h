@@ -11,7 +11,55 @@
 #define __global__
 #define __device__
 #define __shared__
+#define __syncthreads()
+//#define threadIdx.x 10
+//#define threadIdx.y 10
 #endif
+
+#define MAGBITS 0x7FFFFC00
+#define BORDER 1
+#define SIGMA_NEW 1
+#define SIGMA_OLD 2
+
+// CX,D pairs vector
+//	31-27	26	25-21		20	19-15		14		13-9	8		5		4		3		2-0
+//	CX1	|	D1	|	CX2	|	D2	|	CX3	|	D3	|	CX4	|	D4	|	CUP	|	MRP	|	SPP	|	CX,D pairs counter
+#define CX1_BITPOS 27
+#define D1_BITPOS 26
+#define D2_BITPOS 20
+#define D3_BITPOS 14
+#define D4_BITPOS 8
+#define CUP_BITPOS 5
+#define MRP_BITPOS 4
+#define SPP_BITPOS 3
+
+#define CXD_COUNTER 0x7
+
+// coeff
+//	31		30-10		9-6						5		4			2		1				0
+//	Sign	|	pixel	|	rlcDposition	|	coded	|	rlc	|	nbh	|	sigma_old	|	sigma_new
+// 4 - RLC
+#define RLC 0x00000010
+#define CODED 0x00000020
+#define RLC_BITPOS 4
+#define CODED_BITPOS 5
+
+#define SIGN_BITPOS 31
+#define SIGN 1 << SIGN_BITPOS
+
+#define TIDX threadIdx.x
+#define TIDY threadIdx.y
+#define X (TIDX + BORDER)
+#define Y (TIDY + BORDER)
+
+// 31-27 position set CX 17
+#define RLC_CX_17 0x88000000
+// 25-21 and 19-15 position set CX18
+#define RLC_CX_18 0x02490000
+
+#define GET_SIGMA_NEW(src, bitplane) ((src >> bitplane) & SIGMA_NEW)
+#define SET_SIGMA_NEW(dst, src) (dst |= src)
+#define GET_VAR(src, var) (src & var)
 
 typedef struct
 {
@@ -35,8 +83,6 @@ typedef struct
 
 	int* coefficients;
 } CodeBlockAdditionalInfo;
-
-void launch_bpc_encode(dim3 gridDim, dim3 blockDim, CodeBlockAdditionalInfo *infos);
 
 //	8	7	6	5	4	3	2	1	0
 // br	bc	bl	r	c	l	tr	tc	tl
@@ -127,11 +173,6 @@ __constant__ unsigned char SPCXLUT[3][512] = {
 		}
 	};
 
-__device__ unsigned char getSPCX(unsigned int i, unsigned char subband)
-{
-	return SPCXLUT[subband][i & 0x1FF];
-}
-
 /* sign context in the following format
 		index:
 			first (MSB) bit V0 significance (1 significant, 0 insignificant)
@@ -163,9 +204,6 @@ __device__ unsigned char getSPCX(unsigned int i, unsigned char subband)
 		29, 29, 28, 29, 29, 29, 28, 29, 26, 26,  9, 26, 29, 29, 28, 29
 	};
 
-__device__ unsigned char getSICX(unsigned int sig_sign)
-{
-	return signcxlut[sig_sign];
-}
+void launch_bpc_encode(dim3 gridDim, dim3 blockDim, CodeBlockAdditionalInfo *infos, unsigned int *g_cxds);
 
 #endif /* GPU_BPC_H_ */
