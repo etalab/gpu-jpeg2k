@@ -45,7 +45,7 @@ __device__ void save_cxd(unsigned int cxds[][Code_Block_Size_X], unsigned int &p
 }
 
 template <char Code_Block_Size_X>
-__device__ void RunLengthCoding(unsigned int coeff[][Code_Block_Size_X + BORDER], unsigned int cxds[][Code_Block_Size_X], const unsigned char bitplane) {
+__device__ void runLengthCoding(unsigned int coeff[][Code_Block_Size_X + BORDER], unsigned int cxds[][Code_Block_Size_X], const unsigned char bitplane) {
 	// store information about left and right neighbours
 	coeff[Y][X] |= ((coeff[Y][X - 1] & SIGMA_NEW) ||
 					(coeff[Y][X - 1] & SIGMA_OLD) ||
@@ -66,26 +66,29 @@ __device__ void RunLengthCoding(unsigned int coeff[][Code_Block_Size_X + BORDER]
 	int shift = 6 + (TIDY & 3);
 
 	// >> bitplane & 1??
-	atomicOr(&coeff[((Y - BORDER) & 0xfffffffc) + BORDER][X], (coeff[Y][X] & SIGMA_NEW) << shift);
+	atomicOr(&coeff[((Y - BORDER) & 0xfffffffc) + BORDER][X], ((coeff[Y][X]/* & SIGMA_NEW*/ >> bitplane) & 1) << shift);
 	__syncthreads();
 
 	// first thread in stripe
 	if(!(TIDY & 3)) {
 		// store information about top, bottom and corners
-		unsigned int nbh = ((coeff[Y - 1][X - 1] & SIGMA_NEW) ||
+		coeff[Y][X] |= ((coeff[Y - 1][X - 1] & SIGMA_NEW) ||
 				(coeff[Y - 1][X - 1] & SIGMA_OLD) || ((coeff[Y - 1][X - 1] >> bitplane) & 1) ||
 				(coeff[Y - 1][X] & SIGMA_NEW) ||
 				(coeff[Y - 1][X] & SIGMA_OLD) || ((coeff[Y - 1][X] >> bitplane) & 1) ||
 				(coeff[Y - 1][X + 1] & SIGMA_NEW) ||
 				(coeff[Y - 1][X + 1] & SIGMA_OLD) || ((coeff[Y - 1][X + 1] >> bitplane) & 1) ||
 				(coeff[Y + 4][X - 1] & SIGMA_NEW) ||
-				(coeff[Y + 4][X - 1] & SIGMA_OLD) || ((coeff[Y + 4][X - 1] >> bitplane) & 1) ||
+				(coeff[Y + 4][X - 1] & SIGMA_OLD) /*|| ((coeff[Y + 4][X - 1] >> bitplane) & 1)*/ ||
 				(coeff[Y + 4][X] & SIGMA_NEW) ||
 				(coeff[Y + 4][X] & SIGMA_OLD) ||
 				(coeff[Y + 4][X + 1] & SIGMA_NEW) ||
 				(coeff[Y + 4][X + 1] & SIGMA_OLD)) << RLC_BITPOS;
 
-		coeff[Y][X] |= nbh;
+//		coeff[Y][X] |= nbh;
+		coeff[Y + 1][X] = coeff[Y + 1][X] & (~(1 << RLC_BITPOS));
+		coeff[Y + 2][X] = coeff[Y + 2][X] & (~(1 << RLC_BITPOS));
+		coeff[Y + 3][X] = coeff[Y + 3][X] & (~(1 << RLC_BITPOS));
 		// invert RLC bit
 		coeff[Y][X] = (coeff[Y][X] & ~RLC) | (~coeff[Y][X] & RLC);
 		//?
@@ -96,6 +99,11 @@ __device__ void RunLengthCoding(unsigned int coeff[][Code_Block_Size_X + BORDER]
 			// vector of stripe significance
 			int cx17_d = (coeff[Y][X] >> 6) & 0xf;
 			pairs |= ((cx17_d && 1) << D1_BITPOS); // set D
+			pairs |= 1 << CUP_BITPOS;
+			//			coeff[Y + 0][X] |= 1 << RLC_BITPOS;
+			coeff[Y + 1][X] |= 1 << RLC_BITPOS;
+			coeff[Y + 2][X] |= 1 << RLC_BITPOS;
+			coeff[Y + 3][X] |= 1 << RLC_BITPOS;
 			if (cx17_d) {
 				// if D is 1, then generate two CX 18
 				int firstBitPos = __ffs(cx17_d) - 1;
@@ -104,19 +112,19 @@ __device__ void RunLengthCoding(unsigned int coeff[][Code_Block_Size_X + BORDER]
 				pairs |= (firstBitPos & 0x2) << (D2_BITPOS -1);
 				pairs |= (firstBitPos & 0x1) << D3_BITPOS;
 				// mark bits processed by RLC in current bit-plane
-
-
-				pairs |= 1 << CUP_BITPOS;
-				// save CX,D paris
-				cxds[TIDY][TIDX] = pairs;
+				// first in stripe is always encoded
+				coeff[Y + 1][X] = coeff[Y + 1][X] & ~(!((firstBitPos & 0x1) | (firstBitPos & 0x2)) << RLC_BITPOS);
+				coeff[Y + 2][X] = coeff[Y + 2][X] & ~(!(firstBitPos & 0x2) << RLC_BITPOS);
+				coeff[Y + 3][X] = coeff[Y + 3][X] & ~(!((firstBitPos & 0x1) && (firstBitPos & 0x2)) << RLC_BITPOS);
 			}
+			// save CX,D paris 1 or 3
+			save_cxd(cxds, pairs, (cx17_d && 1) - (cx17_d == 0) + 2);
 		}
-
 	}
 }
 
 template <char Code_Block_Size_X>
-__device__ void CleanUpPassMSB(unsigned int coeff[][Code_Block_Size_X + BORDER], unsigned int cxds[][Code_Block_Size_X], CodeBlockAdditionalInfo *info, const unsigned char bitplane) {
+__device__ void cleanUpPassMSB(unsigned int coeff[][Code_Block_Size_X + BORDER], unsigned int cxds[][Code_Block_Size_X], CodeBlockAdditionalInfo *info, const unsigned char bitplane) {
 //	SET_SIGMA_NEW(coeff[Y][X], GET_SIGMA_NEW(coeff[Y][X], bitplane));
 	coeff[Y][X] |= (coeff[Y][X] >> bitplane) & SIGMA_NEW;
 	__syncthreads();
@@ -230,11 +238,73 @@ __device__ void CleanUpPassMSB(unsigned int coeff[][Code_Block_Size_X + BORDER],
 }
 
 template <char Code_Block_Size_X>
+__device__ void btiplanePreprocessing(unsigned int coeff[][Code_Block_Size_X + BORDER], int &blockVote, const unsigned char bitplane) {
+	// Set sigma_old
+	coeff[Y][X] |= (coeff[Y][X] & SIGMA_NEW) << 1;
+	// Unset sigma_new
+	coeff[Y][X] &= ~SIGMA_NEW;
+	__syncthreads();
+	// Set nbh
+	unsigned char nbh = ((coeff[Y - 1][X + 1] & SIGMA_OLD) ||
+					(coeff[Y - 1][X] & SIGMA_OLD) ||
+					(coeff[Y - 1][X - 1] & SIGMA_OLD) ||
+					(coeff[Y][X - 1] & SIGMA_OLD) ||
+					(coeff[Y + 1][X - 1] & SIGMA_OLD) ||
+					(coeff[Y + 1][X] & SIGMA_OLD) ||
+					(coeff[Y + 1][X + 1] & SIGMA_OLD) ||
+					(coeff[Y][X + 1] & SIGMA_OLD));
+	__syncthreads();
+	// sigma_old == 0 and nbh == 1 and bit value == 1 set sigma_new
+	coeff[Y][X] |= ((!((coeff[Y][X] & SIGMA_OLD) >> 1)) & nbh & ((coeff[Y][X] >> bitplane) & 1));
+	nbh &= ((!((coeff[Y][X] & SIGMA_OLD) >> 1)) & ((coeff[Y][X] >> bitplane) & 1));
+	__syncthreads();
+
+	int warpVote = __any(nbh);
+	__syncthreads();
+	// voting across the blocks
+	if((TID && (32 - 1)) == 0) atomicOr(&blockVote, warpVote);
+	__syncthreads();
+
+	while(blockVote) {
+		// first thread of a block will reset the blockVote
+		if(TID == 0) atomicAnd(&blockVote, 0);
+		__syncthreads();
+		warpVote = 0; // reset warpVote to zero
+		// Get the predecessing neighbour significance state variables
+		nbh = ((coeff[Y - 1][X] & SIGMA_NEW) |
+				(coeff[Y - 1][X - 1] & SIGMA_NEW) |
+				(coeff[Y][X - 1] & SIGMA_NEW) |
+				((coeff[Y + 1][X - 1] & SIGMA_NEW) & ((TIDY & 3) != 0x3)));
+		__syncthreads();
+	//	. . .
+		// IF nbh == 1 && bp [ x ][ y ]== 1 && S I G M A _ O L D != 1
+		// THEN set SIGMA_NEW = 1
+		coeff[Y][X] |= ((!((coeff[Y][X] & SIGMA_OLD) >> 1)) & nbh & ((coeff[Y][X] >> bitplane) & 1));
+		nbh &= ((!((coeff[Y][X] & SIGMA_OLD) >> 1)) & ((coeff[Y][X] >> bitplane) & 1));
+		// We are interested in newly found sigmas only
+		nbh &= ~(coeff[Y][X] & SIGMA_NEW);
+	//	. . .
+		// Voting
+		warpVote = __any(nbh);
+		__syncthreads();
+		// execute it for the first thread of every warp only
+		if((TID && (32 - 1)) == 0) atomicOr(&blockVote, warpVote);
+		__syncthreads();
+	}
+}
+
+template <char Code_Block_Size_X>
+__device__ void magnitudeRefinementCoding(unsigned int coeff[][Code_Block_Size_X + BORDER], const unsigned char bitplane) {
+
+}
+
+template <char Code_Block_Size_X>
 __global__ void bpc_encoder(CodeBlockAdditionalInfo *infos, unsigned int *g_cxds) {
 	// to access coeff use X and Y
 	__shared__ unsigned int coeff[Code_Block_Size_X + BORDER][Code_Block_Size_X + BORDER];
 	__shared__ unsigned int cxds[Code_Block_Size_X][Code_Block_Size_X];
 	__shared__ unsigned int maxs[Code_Block_Size_X];
+	__shared__ int blockVote;
 
 	CodeBlockAdditionalInfo *info = &(infos[blockIdx.x]);
 
@@ -272,8 +342,35 @@ __global__ void bpc_encoder(CodeBlockAdditionalInfo *infos, unsigned int *g_cxds
 
 //	printf("%d\n", leastSignificantBP + significantBits - 1);
 
-	CleanUpPassMSB<Code_Block_Size_X>(coeff, cxds, info, leastSignificantBP + significantBits - 1);
+	cleanUpPassMSB<Code_Block_Size_X>(coeff, cxds, info, leastSignificantBP + significantBits - 1);
 	__syncthreads();
+
+	for(unsigned char i = 1; significantBits; i++)
+	{
+		btiplanePreprocessing<Code_Block_Size_X>(coeff, blockVote, leastSignificantBP + significantBits - i - 1);
+		__syncthreads();
+		// MRP
+		if(coeff[Y][X] & SIGMA_OLD) {
+			magnitudeRefinementCoding<Code_Block_Size_X>(coeff, leastSignificantBP + significantBits - i - 1);
+		}
+		__syncthreads();
+
+		//rlcNbh := Σ(surrounding state variables)
+		//RLC
+		//if rlcN bh = 0 AND σold = 0 AND σnew = 0
+		runLengthCoding<Code_Block_Size_X>(coeff, cxds, leastSignificantBP + significantBits - i - 1);
+		__syncthreads();
+
+		// ZC
+		//if σold = 0 AND rlcN bh = 1 then
+		//execute ZC operation
+		__syncthreads();
+
+		//SC
+		//if σold = 0 AND bit value = 1 then
+		//execute SC operation
+		__syncthreads();
+	}
 
 	// (x % (DIM /4)) * 4 + (y % 4)
 	int bacx = (TIDX &((Code_Block_Size_X >> 2) - 1))*4 + (TIDY & 3);

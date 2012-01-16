@@ -18,8 +18,6 @@
 
 #define MAGBITS 0x7FFFFC00
 #define BORDER 1
-#define SIGMA_NEW 1
-#define SIGMA_OLD 2
 
 // CX,D pairs vector
 //	31-27	26	25-21		20	19-15		14		13-9	8		5		4		3		2-0
@@ -39,8 +37,12 @@
 //	31		30-10		9-6						5		4			2		1				0
 //	Sign	|	pixel	|	rlcDposition	|	coded	|	rlc	|	nbh	|	sigma_old	|	sigma_new
 // 4 - RLC
+#define SIGMA_NEW 1
+#define SIGMA_OLD 2
+#define NBH 4
 #define RLC 0x00000010
 #define CODED 0x00000020
+#define NBH_BITPOS 2
 #define RLC_BITPOS 4
 #define CODED_BITPOS 5
 
@@ -51,6 +53,7 @@
 #define TIDY threadIdx.y
 #define X (TIDX + BORDER)
 #define Y (TIDY + BORDER)
+#define TID (TIDY * blockDim.x + TIDX)
 
 // 31-27 position set CX 17
 #define RLC_CX_17 0x88000000
