@@ -59,6 +59,10 @@
 #define RLC_CX_17 0x88000000
 // 25-21 and 19-15 position set CX18
 #define RLC_CX_18 0x02490000
+// MRC
+#define MRC_CX_16 0x10
+#define MRC_CX_15 0xf
+#define MRC_CX_14 0xe
 
 #define GET_SIGMA_NEW(src, bitplane) ((src >> bitplane) & SIGMA_NEW)
 #define SET_SIGMA_NEW(dst, src) (dst |= src)
