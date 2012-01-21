@@ -56,6 +56,10 @@ void print_cxd(unsigned int pairs) {
 	}
 }
 
+void save_cxd() {
+
+}
+
 void encode_bpc_test(const char *file_name) {
 	struct mqc_data* mqc_data = mqc_data_create_from_image(file_name);
 	if (mqc_data == 0) {
@@ -113,7 +117,7 @@ void encode_bpc_test(const char *file_name) {
 			for(int k = 0; k < cblk->h; ++k) {
 				int cache_value = (cblk->coefficients[k * cblk->w + j]) << (31 - 6 - h_infos[i].magbits);
 				cblk->coefficients[k * cblk->w + j] = cache_value < 0 ? (1 << 31) | (-cache_value) : cache_value;
-//				binary_printf(cblk->coefficients[k * cblk->w + j]);
+				binary_printf(cblk->coefficients[k * cblk->w + j]);
 //				printf("%x\n", cache_value < 0 ? (1 << 31) | (-cache_value) : cache_value);
 				if(cblk->coefficients[k * cblk->w + j] > max)
 					max = cblk->coefficients[k * cblk->w + j];
@@ -177,9 +181,12 @@ void encode_bpc_test(const char *file_name) {
 
 	printf("MSB %d\n", h_infos[0].MSB);
 
+	int bitplanes = 2;
+	int pairs_to_copy = bitplanes * w * h;
+
 	int pairs_count = 0;
 	for (int i = 0; i < codeBlocks; ++i) {
-		for(int j = 0; j < w*h; ++j) {
+		for(int j = 0; j < pairs_to_copy; ++j) {
 			pairs_count += h_cxd_pairs[i * maxOutLength + j] & CXD_COUNTER;
 		}
 	}
@@ -188,19 +195,26 @@ void encode_bpc_test(const char *file_name) {
 
 	int curr_pair = 0;
 	for (int i = 0; i < codeBlocks; ++i) {
-		for(int j = 0; j < w*h; ++j) {
-			unsigned char counter = h_cxd_pairs[i * maxOutLength + j] & CXD_COUNTER;
-
-			for(int k = 0; k < counter; ++k) {
-				unsigned char d = (h_cxd_pairs[i * maxOutLength + j] >> (D1_BITPOS - k * 6)) & 0x1;
-				unsigned char cx = (h_cxd_pairs[i * maxOutLength + j] >> (CX1_BITPOS - k * 6)) & 0x1f;
-//				if((i * maxOutLength + j) == 47) {
-//					printf("%x\n", h_cxd_pairs[i * maxOutLength + j]);
-//				}
-				cxd_pairs[curr_pair].d = d;
-				cxd_pairs[curr_pair].cx = cx;
-				cxd_pairs[curr_pair].tid = i * maxOutLength + j;
-				++curr_pair;
+		for(int b = 0; b < bitplanes; ++b) {
+			for(int p = 0; p < 3; ++p) {
+				for(int j = b * w * h; j < (b + 1) * w * h; ++j) {
+					unsigned char counter = h_cxd_pairs[i * maxOutLength + j] & CXD_COUNTER;
+					unsigned char pass = ((p == 0) ? SPP : ((p == 1) ? MRP : CUP));
+					if(h_cxd_pairs[i * maxOutLength + j] & pass) {
+						for(int k = 0; k < counter; ++k) {
+							unsigned char d = (h_cxd_pairs[i * maxOutLength + j] >> (D1_BITPOS - k * 6)) & 0x1;
+							unsigned char cx = (h_cxd_pairs[i * maxOutLength + j] >> (CX1_BITPOS - k * 6)) & 0x1f;
+			//				if((i * maxOutLength + j) == 47) {
+			//					printf("%x\n", h_cxd_pairs[i * maxOutLength + j]);
+			//				}
+							int tid = j % (w * h);
+							cxd_pairs[curr_pair].d = d;
+							cxd_pairs[curr_pair].cx = cx;
+							cxd_pairs[curr_pair].tid = tid;
+							++curr_pair;
+						}
+					}
+				}
 			}
 		}
 	}
@@ -208,12 +222,12 @@ void encode_bpc_test(const char *file_name) {
 	printf("\n\n\n");
 	for (int i = 0; i < codeBlocks; ++i) {
 		struct mqc_data_cblk *cblk = mqc_data->cblks[i];
-		for(int j = 0; j < /*cblk->cxd_count*/pairs_count; ++j) {
+		for(int j = 0; j < /*cblk->cxd_count*/curr_pair; ++j) {
 			//if((cblk->cxds[j].d != ((h_cxd_pairs[i * maxOutLength + j]&(1<<5)) >> 5)) || (cblk->cxds[j].cx != (h_cxd_pairs[i * maxOutLength + j]&0x1f))) {
-			if((cblk->cxds[j].cx != cxd_pairs[j].cx) || (cblk->cxds[j].d != cxd_pairs[j].d)) {
+//			if((cblk->cxds[j].cx != cxd_pairs[j].cx) || (cblk->cxds[j].d != cxd_pairs[j].d)) {
 				printf("%d) + %d %d", j, cblk->cxds[j].d, cblk->cxds[j].cx);
 				printf("	- %d %d	%d\n", cxd_pairs[j].d, cxd_pairs[j].cx, cxd_pairs[j].tid);
-			}
+//			}
 			//}
 		}
 		/*if (cblk->cxd_count != h_infos[i].length) {

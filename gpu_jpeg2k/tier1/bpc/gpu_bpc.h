@@ -30,6 +30,9 @@
 #define CUP_BITPOS 5
 #define MRP_BITPOS 4
 #define SPP_BITPOS 3
+#define CUP (1 << CUP_BITPOS)
+#define MRP (1 << MRP_BITPOS)
+#define SPP (1 << SPP_BITPOS)
 
 #define CXD_COUNTER 0x7
 
