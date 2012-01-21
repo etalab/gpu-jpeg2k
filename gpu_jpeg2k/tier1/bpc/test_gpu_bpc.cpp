@@ -24,6 +24,7 @@ typedef struct {
 	unsigned char d;
 	unsigned char cx;
 	unsigned int tid;
+	unsigned char bp;
 }cxd_pair;
 
 void binary_printf(unsigned int in)
@@ -99,28 +100,28 @@ void encode_bpc_test(const char *file_name) {
 		h_infos[i].subband = cblk->subband > 0 ? cblk->subband : 0;
 		h_infos[i].magconOffset = magconOffset + cblk->w;
 		h_infos[i].magbits = /*9 + get_exp_subband_gain(cblk->subband)*/cblk->magbits;
-		int max = 0;
-		for(int j = 0; j < cblk->w; ++j) {
-                        for(int k = 0; k < cblk->h; ++k) {
+//		int max = 0;
+//		for(int j = 0; j < cblk->w; ++j) {
+//                        for(int k = 0; k < cblk->h; ++k) {
 //				if(cblk->coefficients[k * cblk->w + j] < 0)
 //					printf("-");
 //				binary_printf(abs(cblk->coefficients[k * cblk->w + j]));
 //                                cblk->coefficients[k * cblk->w + j] <<= (31 - 6 - (cblk->magbits));
-                                if(cblk->coefficients[k * cblk->w + j] > max)
-                                        max = cblk->coefficients[k * cblk->w + j];
-                        }
-                }
+//                                if(cblk->coefficients[k * cblk->w + j] > max)
+//                                        max = cblk->coefficients[k * cblk->w + j];
+//                        }
+//                }
 //		binary_printf(max);
 //		binary_printf(cblk->coefficients[0]);
-		max = 0;
+//		max = 0;
 		for(int j = 0; j < cblk->w; ++j) {
 			for(int k = 0; k < cblk->h; ++k) {
 				int cache_value = (cblk->coefficients[k * cblk->w + j]) << (31 - 6 - h_infos[i].magbits);
 				cblk->coefficients[k * cblk->w + j] = cache_value < 0 ? (1 << 31) | (-cache_value) : cache_value;
-				binary_printf(cblk->coefficients[k * cblk->w + j]);
+//				binary_printf(cblk->coefficients[k * cblk->w + j]);
 //				printf("%x\n", cache_value < 0 ? (1 << 31) | (-cache_value) : cache_value);
-				if(cblk->coefficients[k * cblk->w + j] > max)
-					max = cblk->coefficients[k * cblk->w + j];
+//				if(cblk->coefficients[k * cblk->w + j] > max)
+//					max = cblk->coefficients[k * cblk->w + j];
 			}
 		}
 //		binary_printf(max);
@@ -168,10 +169,10 @@ void encode_bpc_test(const char *file_name) {
 	int h = mqc_data->cblks[0]->h;
 	int max_dim = (w > h) ? w : h;
 
-	dim3 gridDim(1,1,1);
+	dim3 gridDim(codeBlocks,1,1);
 	dim3 blockDim(max_dim, max_dim, 1);
 
-	launch_bpc_encode(gridDim, blockDim, d_infos, d_cxd_pairs);
+	launch_bpc_encode(gridDim, blockDim, d_infos, d_cxd_pairs, maxOutLength);
 
 	unsigned int *h_cxd_pairs = NULL;
 	cuda_h_allocate_mem((void **) &h_cxd_pairs, sizeof(unsigned int) * codeBlocks * maxOutLength);
@@ -179,14 +180,13 @@ void encode_bpc_test(const char *file_name) {
 
 	cuda_memcpy_dth(d_infos, h_infos, sizeof(CodeBlockAdditionalInfo) * codeBlocks);
 
-	printf("MSB %d\n", h_infos[0].MSB);
-
-	int bitplanes = 2;
-	int pairs_to_copy = bitplanes * w * h;
+//	int bitplanes = h_infos;
+//	int pairs_to_copy = bitplanes * w * h;
 
 	int pairs_count = 0;
 	for (int i = 0; i < codeBlocks; ++i) {
-		for(int j = 0; j < pairs_to_copy; ++j) {
+		printf("significantBits %d\n", h_infos[i].significantBits);
+		for(int j = 0; j < h_infos[i].significantBits * w * h; ++j) {
 			pairs_count += h_cxd_pairs[i * maxOutLength + j] & CXD_COUNTER;
 		}
 	}
@@ -195,11 +195,15 @@ void encode_bpc_test(const char *file_name) {
 
 	int curr_pair = 0;
 	for (int i = 0; i < codeBlocks; ++i) {
-		for(int b = 0; b < bitplanes; ++b) {
+		for(int b = 0; b < h_infos[i].significantBits; ++b) {
 			for(int p = 0; p < 3; ++p) {
 				for(int j = b * w * h; j < (b + 1) * w * h; ++j) {
 					unsigned char counter = h_cxd_pairs[i * maxOutLength + j] & CXD_COUNTER;
 					unsigned char pass = ((p == 0) ? SPP : ((p == 1) ? MRP : CUP));
+					if(((h_cxd_pairs[i * maxOutLength + j] & SPP) && (h_cxd_pairs[i * maxOutLength + j] & MRP)) ||
+							((h_cxd_pairs[i * maxOutLength + j] & MRP) && (h_cxd_pairs[i * maxOutLength + j] & CUP)) ||
+							((h_cxd_pairs[i * maxOutLength + j] & CUP) && (h_cxd_pairs[i * maxOutLength + j] & SPP)))
+						printf("TWO PASSES! %d\n", i);
 					if(h_cxd_pairs[i * maxOutLength + j] & pass) {
 						for(int k = 0; k < counter; ++k) {
 							unsigned char d = (h_cxd_pairs[i * maxOutLength + j] >> (D1_BITPOS - k * 6)) & 0x1;
@@ -211,6 +215,7 @@ void encode_bpc_test(const char *file_name) {
 							cxd_pairs[curr_pair].d = d;
 							cxd_pairs[curr_pair].cx = cx;
 							cxd_pairs[curr_pair].tid = tid;
+							cxd_pairs[curr_pair].bp = b;
 							++curr_pair;
 						}
 					}
@@ -219,15 +224,18 @@ void encode_bpc_test(const char *file_name) {
 		}
 	}
 
+	curr_pair = 0;
 	printf("\n\n\n");
 	for (int i = 0; i < codeBlocks; ++i) {
+		printf("codeBlock %d\n", i);
 		struct mqc_data_cblk *cblk = mqc_data->cblks[i];
-		for(int j = 0; j < /*cblk->cxd_count*/curr_pair; ++j) {
+		for(int j = 0; j < cblk->cxd_count; ++j) {
 			//if((cblk->cxds[j].d != ((h_cxd_pairs[i * maxOutLength + j]&(1<<5)) >> 5)) || (cblk->cxds[j].cx != (h_cxd_pairs[i * maxOutLength + j]&0x1f))) {
-//			if((cblk->cxds[j].cx != cxd_pairs[j].cx) || (cblk->cxds[j].d != cxd_pairs[j].d)) {
+			if((cblk->cxds[j].cx != cxd_pairs[curr_pair].cx) || (cblk->cxds[j].d != cxd_pairs[curr_pair].d)) {
 				printf("%d) + %d %d", j, cblk->cxds[j].d, cblk->cxds[j].cx);
-				printf("	- %d %d	%d\n", cxd_pairs[j].d, cxd_pairs[j].cx, cxd_pairs[j].tid);
-//			}
+				printf("	- %d %d	%d	%d\n", cxd_pairs[curr_pair].d, cxd_pairs[curr_pair].cx, cxd_pairs[curr_pair].tid, cxd_pairs[curr_pair].bp);
+			}
+			curr_pair++;
 			//}
 		}
 		/*if (cblk->cxd_count != h_infos[i].length) {

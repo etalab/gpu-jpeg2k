@@ -214,6 +214,6 @@ __constant__ unsigned char SPCXLUT[3][512] = {
 		29, 29, 28, 29, 29, 29, 28, 29, 26, 26,  9, 26, 29, 29, 28, 29
 	};
 
-void launch_bpc_encode(dim3 gridDim, dim3 blockDim, CodeBlockAdditionalInfo *infos, unsigned int *g_cxds);
+void launch_bpc_encode(dim3 gridDim, dim3 blockDim, CodeBlockAdditionalInfo *infos, unsigned int *g_cxds, const int maxOutLength);
 
 #endif /* GPU_BPC_H_ */
