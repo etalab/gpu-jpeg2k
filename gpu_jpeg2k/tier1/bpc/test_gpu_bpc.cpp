@@ -57,10 +57,6 @@ void print_cxd(unsigned int pairs) {
 	}
 }
 
-void save_cxd() {
-
-}
-
 void encode_bpc_test(const char *file_name) {
 	struct mqc_data* mqc_data = mqc_data_create_from_image(file_name);
 	if (mqc_data == 0) {
@@ -198,19 +194,19 @@ void encode_bpc_test(const char *file_name) {
 		for(int b = 0; b < h_infos[i].significantBits; ++b) {
 			for(int p = 0; p < 3; ++p) {
 				for(int j = b * w * h; j < (b + 1) * w * h; ++j) {
-					unsigned char counter = h_cxd_pairs[i * maxOutLength + j] & CXD_COUNTER;
 					unsigned char pass = ((p == 0) ? SPP : ((p == 1) ? MRP : CUP));
 					if(((h_cxd_pairs[i * maxOutLength + j] & SPP) && (h_cxd_pairs[i * maxOutLength + j] & MRP)) ||
 							((h_cxd_pairs[i * maxOutLength + j] & MRP) && (h_cxd_pairs[i * maxOutLength + j] & CUP)) ||
 							((h_cxd_pairs[i * maxOutLength + j] & CUP) && (h_cxd_pairs[i * maxOutLength + j] & SPP)))
-						printf("TWO PASSES! %d\n", i);
+						printf("TWO PASSES! %x\n", h_cxd_pairs[i * maxOutLength + j]);
 					if(h_cxd_pairs[i * maxOutLength + j] & pass) {
+						unsigned char counter = h_cxd_pairs[i * maxOutLength + j] & CXD_COUNTER;
 						for(int k = 0; k < counter; ++k) {
 							unsigned char d = (h_cxd_pairs[i * maxOutLength + j] >> (D1_BITPOS - k * 6)) & 0x1;
 							unsigned char cx = (h_cxd_pairs[i * maxOutLength + j] >> (CX1_BITPOS - k * 6)) & 0x1f;
-			//				if((i * maxOutLength + j) == 47) {
-			//					printf("%x\n", h_cxd_pairs[i * maxOutLength + j]);
-			//				}
+							if(((j % (w * h)) == 49) && (b == 1)) {
+								printf("%x\n", h_cxd_pairs[i * maxOutLength + j]);
+							}
 							int tid = j % (w * h);
 							cxd_pairs[curr_pair].d = d;
 							cxd_pairs[curr_pair].cx = cx;
@@ -223,7 +219,7 @@ void encode_bpc_test(const char *file_name) {
 			}
 		}
 	}
-
+	printf("curr_pair %d\n", curr_pair);
 	curr_pair = 0;
 	printf("\n\n\n");
 	for (int i = 0; i < codeBlocks; ++i) {

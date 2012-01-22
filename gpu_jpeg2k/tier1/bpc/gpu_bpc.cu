@@ -342,11 +342,11 @@ __device__ void zeroCoding(CodeBlockAdditionalInfo *info, unsigned int coeff[][C
 		// ooo	oo		oo
 		// ox	ox		ox
 		// o	o						// sigma_old ?
-		unsigned int sig =	((((coeff[Y - 1][X + 1] & SIGMA_NEW)/* | ((coeff[Y - 1][X + 1] & SIGMA_OLD) >> 1) */| ((coeff[Y - 1][X + 1] >> bitplane) & 1)) && ((TIDY & 3) == 0x0)) << 2) | /*tr*/
-							(((coeff[Y - 1][X] & SIGMA_NEW) | ((coeff[Y - 1][X] & SIGMA_OLD) >> 1) | ((coeff[Y - 1][X] >> bitplane) & 1)) << 1) | /*tc*/
-							(((coeff[Y - 1][X - 1] & SIGMA_NEW) | ((coeff[Y - 1][X - 1] & SIGMA_OLD) >> 1) | (((coeff[Y - 1][X - 1] >> bitplane) & 1))) << 0) | /*tl*/
-							(((coeff[Y][X - 1] & SIGMA_NEW) | ((coeff[Y][X - 1] & SIGMA_OLD) >> 1) | (((coeff[Y][X - 1] >> bitplane) & 1))) << 3) | /*l*/
-							((((coeff[Y + 1][X - 1] & SIGMA_NEW)/* | ((coeff[Y + 1][X - 1] & SIGMA_OLD) >> 1) */| ((coeff[Y + 1][X - 1] >> bitplane) & 1)) && !((TIDY & 3) == 0x3)) << 6); /*bl*/
+		unsigned int sig =	((((coeff[Y - 1][X + 1] & SIGMA_NEW)/* | ((coeff[Y - 1][X + 1] & SIGMA_OLD) >> 1) *//*| ((coeff[Y - 1][X + 1] >> bitplane) & 1)*/) && ((TIDY & 3) == 0x0)) << 2) | /*tr*/
+							(((coeff[Y - 1][X] & SIGMA_NEW) | ((coeff[Y - 1][X] & SIGMA_OLD) >> 1) /*| ((coeff[Y - 1][X] >> bitplane) & 1)*/) << 1) | /*tc*/
+							(((coeff[Y - 1][X - 1] & SIGMA_NEW) | ((coeff[Y - 1][X - 1] & SIGMA_OLD) >> 1) /*| ((coeff[Y - 1][X - 1] >> bitplane) & 1)*/) << 0) | /*tl*/
+							(((coeff[Y][X - 1] & SIGMA_NEW) | ((coeff[Y][X - 1] & SIGMA_OLD) >> 1)/* | ((coeff[Y][X - 1] >> bitplane) & 1)*/) << 3) | /*l*/
+							((((coeff[Y + 1][X - 1] & SIGMA_NEW)/* | ((coeff[Y + 1][X - 1] & SIGMA_OLD) >> 1) *//*| ((coeff[Y + 1][X - 1] >> bitplane) & 1)*/) && ((TIDY & 3) != 0x3)) << 6); /*bl*/
 
 		// in stripe significance - sigma_old
 		// 11	01,10	00 - stripe position
@@ -356,14 +356,17 @@ __device__ void zeroCoding(CodeBlockAdditionalInfo *info, unsigned int coeff[][C
 		sig |= ((((coeff[Y - 1][X + 1] & SIGMA_OLD) >> 1) /*&& ((TIDY & 3) != 0x0)*/) << 2) | /*tr*/
 								(((coeff[Y][X + 1] & SIGMA_OLD) >> 1) << 5) | /*r*/
 								(((coeff[Y + 1][X + 1] & SIGMA_OLD) >> 1) << 8) | /*br*/
-								(((coeff[Y + 1][X] & SIGMA_OLD) >> 1) << 7) | /*bc*/
+								((((coeff[Y + 1][X] & SIGMA_OLD) >> 1)/*| ((coeff[Y + 1][X] >> bitplane) & 1)*/) << 7) | /*bc*/
 								((((coeff[Y + 1][X - 1] & SIGMA_OLD) >> 1)/* && ((TIDY & 3) == 0x3)*/) << 6); /*bl*/
 
 		pairs = getSPCX(sig, info->subband) << CX1_BITPOS; // set CX
 		pairs |= ((coeff[Y][X] >> bitplane) & 1) << D1_BITPOS; // set D
 		pairs |= ((sig == 0) << CUP_BITPOS) | ((sig && 1) << SPP_BITPOS); // set CUP or SPP, nbh differentiate
-	//		if((TIDY == 4) && (TIDX == 1))
-	//			printf("ZC %x %d %d\n", coeff[Y][X], TIDY, TIDX);
+//		if()
+			if((TIDY == 1) && (TIDX == 12) && (bitplane == 29))
+				printf("ZC %x %d %d	%x bc %d tc %d\n", pairs, TIDY, TIDX, sig,
+						((coeff[Y + 1][X]  >> bitplane) & 1) /*| (coeff[Y + 1][X]  & SIGMA_NEW)*/ | (coeff[Y + 1][X] & SIGMA_OLD),
+						((coeff[Y - 1][X]  >> bitplane) & 1) | (coeff[Y - 1][X]  & SIGMA_NEW) | (coeff[Y - 1][X] & SIGMA_OLD));
 		save_cxd(cxds, pairs);
 	//		cxds[TIDY][TIDX] = pairs;
 	}
