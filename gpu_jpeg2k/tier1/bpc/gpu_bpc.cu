@@ -389,9 +389,9 @@ __device__ void signCoding(unsigned int coeff[][Code_Block_Size_X + BORDER], uns
 							((coeff[Y - 1][X] >> SIGN_BITPOS) << 6)/*V0*/ |
 							(((coeff[Y][X - 1] & SIGMA_NEW) | ((coeff[Y][X - 1] & SIGMA_OLD) >> 1)) << 5)/*H0*/ |
 							((coeff[Y][X - 1] >> SIGN_BITPOS) << 4)/*H0*/ |
-							(((coeff[Y][X + 1] & SIGMA_OLD) >> 1) << 3)/*H1*/ |
+							((((coeff[Y][X + 1] & SIGMA_OLD) >> 1) | ((coeff[Y][X + 1] & SIGMA_NEW) && !(coeff[Y][X] & SIGMA_NEW))) << 3)/*H1*/ |
 							((coeff[Y][X + 1] >> SIGN_BITPOS) << 2)/*H1*/ |
-							(((coeff[Y + 1][X] & SIGMA_OLD) >> 1) << 1)/*V1*/ |
+							((((coeff[Y + 1][X] & SIGMA_OLD) >> 1) | ((coeff[Y + 1][X] & SIGMA_NEW) && !(coeff[Y][X] & SIGMA_NEW))) << 1)/*V1*/ |
 							((coeff[Y + 1][X] >> SIGN_BITPOS) << 0)/*V1*/;
 		unsigned char cx_x = getSICX(sig_sign);
 		unsigned char cx = cx_x & 0xF; // set CX

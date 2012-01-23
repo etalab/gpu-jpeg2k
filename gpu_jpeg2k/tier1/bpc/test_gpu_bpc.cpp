@@ -26,6 +26,7 @@ typedef struct {
 	unsigned char cx;
 	unsigned int tid;
 	unsigned char bp;
+	unsigned char pass;
 }cxd_pair;
 
 void binary_printf(unsigned int in)
@@ -231,6 +232,7 @@ void encode_bpc_test(const char *file_name) {
 							cxd_pairs[curr_pair].cx = cx;
 							cxd_pairs[curr_pair].tid = tid;
 							cxd_pairs[curr_pair].bp = b;
+							cxd_pairs[curr_pair].pass = pass;
 							++curr_pair;
 						}
 					}
@@ -248,7 +250,7 @@ void encode_bpc_test(const char *file_name) {
 			//if((cblk->cxds[j].d != ((h_cxd_pairs[i * maxOutLength + j]&(1<<5)) >> 5)) || (cblk->cxds[j].cx != (h_cxd_pairs[i * maxOutLength + j]&0x1f))) {
 			if((cblk->cxds[j].cx != cxd_pairs[curr_pair].cx) || (cblk->cxds[j].d != cxd_pairs[curr_pair].d)) {
 				printf("%d) + %d %d", j, cblk->cxds[j].d, cblk->cxds[j].cx);
-				printf("	- %d %d	%d	%d\n", cxd_pairs[curr_pair].d, cxd_pairs[curr_pair].cx, cxd_pairs[curr_pair].tid, cxd_pairs[curr_pair].bp);
+				printf("	- %d %d	%d	%x	%d\n", cxd_pairs[curr_pair].d, cxd_pairs[curr_pair].cx, cxd_pairs[curr_pair].tid, cxd_pairs[curr_pair].pass, cxd_pairs[curr_pair].bp);
 			}
 			curr_pair++;
 			//}
