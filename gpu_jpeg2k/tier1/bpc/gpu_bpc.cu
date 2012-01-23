@@ -165,8 +165,8 @@ __device__ void btiplanePreprocessing(unsigned int coeff[][Code_Block_Size_X + 2
 	// Set sigma_old
 	coeff[Y][X] |= (coeff[Y][X] & SIGMA_NEW) << 1;
 	// Unset sigma_new
-	coeff[Y][X] &= ~SIGMA_NEW;
-	coeff[Y][X] &= ~RLC;
+	//coeff[Y][X] &= ~SIGMA_NEW;
+	coeff[Y][X] &= ~0x3f4/*CLR_VAR*/;
 	__syncthreads();
 
 	// Set nbh
@@ -277,6 +277,11 @@ __device__ void runLengthCoding(unsigned int coeff[][Code_Block_Size_X + 2*BORDE
 	// get RLC values of successors and save in first stripe position
 	atomicOr(&coeff[((Y - BORDER) & 0xfffffffc) + BORDER][X], coeff[Y][X] & RLC);
 	__syncthreads();
+	
+	// clear stripe
+	coeff[Y][X] &= ~0x3c0;
+//	if((TIDY == 4) && (TIDX == 4) && (bitplane == 29))
+//        	printf("RLC1 %d %d %x    %d\n", TIDY, TIDX, (coeff[Y][X] >> 6) & 0xf, (coeff[Y][X] >> bitplane) & 1);
 
 	// get 4 bits of current stripe
 	int shift = 6 + (TIDY & 3);
@@ -284,6 +289,9 @@ __device__ void runLengthCoding(unsigned int coeff[][Code_Block_Size_X + 2*BORDE
 	// >> bitplane & 1??
 	atomicOr(&coeff[((Y - BORDER) & 0xfffffffc) + BORDER][X], ((coeff[Y][X]/* & SIGMA_NEW*/ >> bitplane) & 1) << shift);
 	__syncthreads();
+
+//	if((TIDY == 4) && (TIDX == 4) && (bitplane == 29))
+//        	printf("RLC2 %d %d %x    %d\n", TIDY, TIDX, (coeff[Y][X] >> 6) & 0xf, (coeff[Y][X] >> bitplane) & 1);
 
 	// first thread in stripe
 	if(!(TIDY & 3)) {
@@ -311,8 +319,8 @@ __device__ void runLengthCoding(unsigned int coeff[][Code_Block_Size_X + 2*BORDE
 //		__syncthreads();
 		// check if sigma_new, sigma_old are zero and rlc is one
 		if((coeff[Y][X] & 0x1f) == 0x10) {
-//			if((TIDY == 15) && (TIDX == 12) && (bitplane == 29))
-//	                        printf("RLC %d %d %x\n", TIDY, TIDX, (coeff[Y][X] & RLC));
+//			if((TIDY == 4) && (TIDX == 4) && (bitplane == 29))
+//	                        printf("RLC %d %d %x	%d\n", TIDY, TIDX, (coeff[Y][X] >> 6) & 0xf, (coeff[Y][X] >> bitplane) & 1);
 			pairs = RLC_CX_17; // set CX =17
 			// vector of stripe significance
 			int cx17_d = (coeff[Y][X] >> 6) & 0xf;
@@ -349,7 +357,7 @@ __device__ void zeroCoding(CodeBlockAdditionalInfo *info, unsigned int coeff[][C
 		// ooo	oo		oo
 		// ox	ox		ox
 		// o	o						// sigma_old ?
-		unsigned int sig =	((((coeff[Y - 1][X + 1] & SIGMA_NEW)/* | ((coeff[Y - 1][X + 1] & SIGMA_OLD) >> 1) *//*| ((coeff[Y - 1][X + 1] >> bitplane) & 1)*/) && ((TIDY & 3) == 0x0)) << 2) | /*tr*/
+		unsigned int nbh =	((((coeff[Y - 1][X + 1] & SIGMA_NEW)/* | ((coeff[Y - 1][X + 1] & SIGMA_OLD) >> 1) *//*| ((coeff[Y - 1][X + 1] >> bitplane) & 1)*/) && ((TIDY & 3) == 0x0)) << 2) | /*tr*/
 							(((coeff[Y - 1][X] & SIGMA_NEW) | ((coeff[Y - 1][X] & SIGMA_OLD) >> 1)/* | ((coeff[Y - 1][X] >> bitplane) & 1)*/) << 1) | /*tc*/
 							(((coeff[Y - 1][X - 1] & SIGMA_NEW) | ((coeff[Y - 1][X - 1] & SIGMA_OLD) >> 1)/* | ((coeff[Y - 1][X - 1] >> bitplane) & 1)*/) << 0) | /*tl*/
 							(((coeff[Y][X - 1] & SIGMA_NEW) | ((coeff[Y][X - 1] & SIGMA_OLD) >> 1)/* | ((coeff[Y][X - 1] >> bitplane) & 1)*/) << 3) | /*l*/
@@ -360,28 +368,38 @@ __device__ void zeroCoding(CodeBlockAdditionalInfo *info, unsigned int coeff[][C
 		// 	 o	 o
 		//  xo	xo		xo
 		// ooo	oo		oo
-		sig |= (((((coeff[Y - 1][X + 1] & SIGMA_OLD) >> 1)/* | (coeff[Y - 1][X + 1] & SIGMA_NEW)*/) /*&& ((TIDY & 3) != 0x0)*/) << 2) | /*tr*/
+		nbh |= (((((coeff[Y - 1][X + 1] & SIGMA_OLD) >> 1)/* | (coeff[Y - 1][X + 1] & SIGMA_NEW)*/) /*&& ((TIDY & 3) != 0x0)*/) << 2) | /*tr*/
 								((((coeff[Y][X + 1] & SIGMA_OLD) >> 1)/* | (coeff[Y][X + 1] & SIGMA_NEW)*/) << 5) | /*r*/
 								((((coeff[Y + 1][X + 1] & SIGMA_OLD) >> 1)/* | (coeff[Y + 1][X + 1] & SIGMA_NEW)*/) << 8) | /*br*/
 								((((coeff[Y + 1][X] & SIGMA_OLD) >> 1)/* | (coeff[Y + 1][X] & SIGMA_NEW)*/) << 7) | /*bc*/
 								((((coeff[Y + 1][X - 1] & SIGMA_OLD) >> 1)/* | (coeff[Y + 1][X - 1] & SIGMA_NEW)*//* && ((TIDY & 3) == 0x3)*/) << 6); /*bl*/
 
-		pairs = ((sig == 0) << CUP_BITPOS) | ((sig && 1) << SPP_BITPOS); // set CUP or SPP, nbh differentiate
+		pairs = ((nbh == 0) << CUP_BITPOS) | ((nbh && 1) << SPP_BITPOS); // set CUP or SPP, nbh differentiate
 
-//                if((TIDY == 15) && (TIDX == 12) && (bitplane == 29))
-//	                printf("ZC %d %d %x\n", TIDY, TIDX, sig);
+//		if((TIDY == 3) && (TIDX == 2) && (bitplane == 29))
+//                        printf("ZC1 %d %d %x\n", TIDY, TIDX, sig);
 
-		sig |=  (((coeff[Y - 1][X + 1] & SIGMA_NEW) && (sig == 0)) << 2) | /*tr*/
-				(((coeff[Y][X + 1] & SIGMA_NEW) && (sig == 0)) << 5) | /*r*/
-				(((coeff[Y + 1][X + 1] & SIGMA_NEW) && (sig == 0)) << 8) | /*br*/
-				(((coeff[Y + 1][X] & SIGMA_NEW) && (sig == 0)) << 7) | /*bc*/
-				(((coeff[Y + 1][X - 1] & SIGMA_NEW) && (sig == 0)) << 6); /*bl*/
+//                if((TIDY == 3) && (TIDX == 2) && (bitplane == 29))
+//	                printf("ZC2 %d %d %x\n", TIDY, TIDX, sig);
+
+		unsigned int sig = nbh;
+                sig |=  ((((coeff[Y - 1][X + 1] & SIGMA_NEW) & (nbh == 0)) << 2) | /*tr*/
+                                (((coeff[Y][X + 1] & SIGMA_NEW) & (nbh == 0)) << 5) | /*r*/
+                                (((coeff[Y + 1][X + 1] & SIGMA_NEW) & (nbh == 0)) << 8) | /*br*/
+                                (((coeff[Y + 1][X] & SIGMA_NEW) & (nbh == 0)) << 7) | /*bc*/
+                                (((coeff[Y + 1][X - 1] & SIGMA_NEW) & (nbh == 0)) << 6)); /*bl*/
+
+		sig |= (((((coeff[Y - 1][X + 1] >> bitplane) & 1) & ((TIDY & 3) == 0x0) & (nbh == 0)) << 2) | /*tr*/
+                                                        (((coeff[Y - 1][X] >> bitplane) & 1 & (nbh == 0)) << 1) | /*tc*/
+                                                        (((coeff[Y - 1][X - 1] >> bitplane) & 1 & (nbh == 0)) << 0) | /*tl*/
+                                                        (((coeff[Y][X - 1] >> bitplane) & 1 & (nbh == 0)) << 3) | /*l*/
+                                                        ((((coeff[Y + 1][X - 1] >> bitplane) & 1) & ((TIDY & 3) != 0x3) & (nbh == 0)) << 6)); /*bl*/
 
 		pairs |= getSPCX(sig, info->subband) << CX1_BITPOS; // set CX
 		pairs |= ((coeff[Y][X] >> bitplane) & 1) << D1_BITPOS; // set D
 
-//		if((TIDY == 7) && (TIDX == 5) && (bitplane == 29))
-//                        printf("ZC %d %d %x\n", TIDY, TIDX, pairs);
+//		if((TIDY == 3) && (TIDX == 2) && (bitplane == 29))
+//                        printf("ZC %d %d %x %d %d\n", TIDY, TIDX, sig, (coeff[Y - 1][X + 1] & SIGMA_NEW), ((coeff[Y][X - 1] >> bitplane) & 1));
 
 		save_cxd(cxds, pairs);
 	//		cxds[TIDY][TIDX] = pairs;
@@ -393,9 +411,9 @@ __device__ void signCoding(unsigned int coeff[][Code_Block_Size_X + 2*BORDER], u
 //	if σold = 0 AND bit value = 1 then
 	if(!(coeff[Y][X] & SIGMA_OLD) && ((coeff[Y][X] >> bitplane) & 1)) {
 		// bitplane ?
-		unsigned int sig_sign = (((coeff[Y - 1][X] & SIGMA_NEW) | ((coeff[Y - 1][X] & SIGMA_OLD) >> 1)) << 7)/*V0*/ |
+		unsigned int sig_sign = (((coeff[Y - 1][X] & SIGMA_NEW) | ((coeff[Y - 1][X] & SIGMA_OLD) >> 1) | (((coeff[Y - 1][X] >> bitplane) & 1) && !(coeff[Y][X] & SIGMA_NEW))) << 7)/*V0*/ |
 							((coeff[Y - 1][X] >> SIGN_BITPOS) << 6)/*V0*/ |
-							(((coeff[Y][X - 1] & SIGMA_NEW) | ((coeff[Y][X - 1] & SIGMA_OLD) >> 1)) << 5)/*H0*/ |
+							(((coeff[Y][X - 1] & SIGMA_NEW) | ((coeff[Y][X - 1] & SIGMA_OLD) >> 1) | (((coeff[Y][X - 1] >> bitplane) & 1) && !(coeff[Y][X] & SIGMA_NEW))) << 5)/*H0*/ |
 							((coeff[Y][X - 1] >> SIGN_BITPOS) << 4)/*H0*/ |
 							((((coeff[Y][X + 1] & SIGMA_OLD) >> 1) | ((coeff[Y][X + 1] & SIGMA_NEW) && !(coeff[Y][X] & SIGMA_NEW))) << 3)/*H1*/ |
 							((coeff[Y][X + 1] >> SIGN_BITPOS) << 2)/*H1*/ |
