@@ -43,7 +43,7 @@ void binary_printf(unsigned int in)
 }
 
 void bit_printf(unsigned int in, int bitplane) {
-	printf("%d", in >> bitplane & 1);
+	printf("%d", (in >> bitplane) & 1);
 }
 
 int get_exp_subband_gain(int orient)
@@ -126,18 +126,18 @@ void encode_bpc_test(const char *file_name) {
 //					max = cblk->coefficients[k * cblk->w + j];
 			}
 		}
-		for(int bp = 0; bp < 2; ++bp) {
-			printf("bitplane %d\n", bp);
-			for(int k = 0; k < cblk->h; ++k) {
-				for(int j = 0; j < cblk->w; ++j) {
-					bit_printf(cblk->coefficients[k * cblk->w + j], 30 - bp);
-					printf(" ");
-				}
-				printf("\n");
-			}
-			printf("\n");
-			printf("\n");
-		}
+//		for(int bp = 0; bp < 2; ++bp) {
+//			printf("bitplane %d\n", bp);
+//			for(int k = 0; k < cblk->h; ++k) {
+//				for(int j = 0; j < cblk->w; ++j) {
+//					bit_printf(cblk->coefficients[k * cblk->w + j], 30 - bp);
+//					printf(" ");
+//				}
+//				printf("\n");
+//			}
+//			printf("\n");
+//			printf("\n");
+//		}
 //		binary_printf(max);
 //		binary_printf(cblk->coefficients[0]);
 		cuda_d_allocate_mem((void **)&(h_infos[i].coefficients), h_infos[i].width * h_infos[i].height * sizeof(int));
@@ -223,9 +223,9 @@ void encode_bpc_test(const char *file_name) {
 						for(int k = 0; k < counter; ++k) {
 							unsigned char d = (h_cxd_pairs[i * maxOutLength + j] >> (D1_BITPOS - k * 6)) & 0x1;
 							unsigned char cx = (h_cxd_pairs[i * maxOutLength + j] >> (CX1_BITPOS - k * 6)) & 0x1f;
-							if(((j % (w * h)) == 49) && (b == 1)) {
-								printf("%x\n", h_cxd_pairs[i * maxOutLength + j]);
-							}
+//							if(((j % (w * h)) == 49) && (b == 1)) {
+//								printf("%x\n", h_cxd_pairs[i * maxOutLength + j]);
+//							}
 							int tid = j % (w * h);
 							cxd_pairs[curr_pair].d = d;
 							cxd_pairs[curr_pair].cx = cx;
