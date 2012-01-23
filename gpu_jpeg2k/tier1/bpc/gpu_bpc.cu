@@ -356,17 +356,17 @@ __device__ void zeroCoding(CodeBlockAdditionalInfo *info, unsigned int coeff[][C
 		sig |= ((((coeff[Y - 1][X + 1] & SIGMA_OLD) >> 1) /*&& ((TIDY & 3) != 0x0)*/) << 2) | /*tr*/
 								(((coeff[Y][X + 1] & SIGMA_OLD) >> 1) << 5) | /*r*/
 								(((coeff[Y + 1][X + 1] & SIGMA_OLD) >> 1) << 8) | /*br*/
-								((((coeff[Y + 1][X] & SIGMA_OLD) >> 1)/*| ((coeff[Y + 1][X] >> bitplane) & 1)*/) << 7) | /*bc*/
+								((((coeff[Y + 1][X] & SIGMA_OLD) >> 1)/*| ((coeff[Y + 1][X] & SIGMA_NEW) & 1)*/) << 7) | /*bc*/
 								((((coeff[Y + 1][X - 1] & SIGMA_OLD) >> 1)/* && ((TIDY & 3) == 0x3)*/) << 6); /*bl*/
 
 		pairs = getSPCX(sig, info->subband) << CX1_BITPOS; // set CX
 		pairs |= ((coeff[Y][X] >> bitplane) & 1) << D1_BITPOS; // set D
 		pairs |= ((sig == 0) << CUP_BITPOS) | ((sig && 1) << SPP_BITPOS); // set CUP or SPP, nbh differentiate
 //		if()
-			if((TIDY == 1) && (TIDX == 12) && (bitplane == 29))
-				printf("ZC %x %d %d	%x bc %d tc %d\n", pairs, TIDY, TIDX, sig,
-						((coeff[Y + 1][X]  >> bitplane) & 1) /*| (coeff[Y + 1][X]  & SIGMA_NEW)*/ | (coeff[Y + 1][X] & SIGMA_OLD),
-						((coeff[Y - 1][X]  >> bitplane) & 1) | (coeff[Y - 1][X]  & SIGMA_NEW) | (coeff[Y - 1][X] & SIGMA_OLD));
+//			if((TIDY == 1) && (TIDX == 0) && (bitplane == 29))
+//				printf("ZC %d %d	%x 	bc %d tc %d\n", TIDY, TIDX, sig,
+//						((coeff[Y][X - 1]  & SIGMA_NEW) | (coeff[Y][X - 1] & SIGMA_OLD)),
+//						((coeff[Y][X + 1] & SIGMA_OLD)));
 		save_cxd(cxds, pairs);
 	//		cxds[TIDY][TIDX] = pairs;
 	}
@@ -409,6 +409,28 @@ __global__ void bpc_encoder(CodeBlockAdditionalInfo *infos, unsigned int *g_cxds
 	__shared__ int blockVote;
 
 	CodeBlockAdditionalInfo *info = &(infos[blockIdx.x]);
+
+	// set borders to zero - not efficient way...
+	if((TIDX < Code_Block_Size_X) && (TIDY == 0)) {
+		coeff[0][TIDX + BORDER] = 0;
+		coeff[info->height + BORDER][TIDX + BORDER] = 0;
+	}
+
+	if((TIDY < Code_Block_Size_X) && (TIDX == 0)) {
+		coeff[TIDY + BORDER][0] = 0;
+		coeff[TIDY + BORDER][info->width + BORDER] = 0;
+	}
+
+	if((TIDX == 0) && (TIDY == 0)) {
+		coeff[0][0] = 0;
+		coeff[info->height + BORDER][0] = 0;
+		coeff[0][info->width + BORDER] = 0;
+		coeff[info->width + BORDER][info->height + BORDER] = 0;
+	}
+	__syncthreads();
+	// set cxds to zero, for RLC
+	cxds[TIDY][TIDX] = 0;
+	__syncthreads();
 
 	if((TIDX >= info->width) || (TIDY >= info->height)) return;
 

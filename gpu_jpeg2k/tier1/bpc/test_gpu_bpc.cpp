@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <iostream>
 #include <cuda_runtime.h>
@@ -39,6 +40,10 @@ void binary_printf(unsigned int in)
 	}
 
 	printf("\n");
+}
+
+void bit_printf(unsigned int in, int bitplane) {
+	printf("%d", in >> bitplane & 1);
 }
 
 int get_exp_subband_gain(int orient)
@@ -80,6 +85,7 @@ void encode_bpc_test(const char *file_name) {
 	CodeBlockAdditionalInfo *d_infos;
 
 	cuda_d_allocate_mem((void **) &d_cxd_pairs, sizeof(unsigned int) * codeBlocks * maxOutLength);
+	cuda_d_memset((void *)d_cxd_pairs, 0, sizeof(unsigned int) * codeBlocks * maxOutLength);
 	cuda_d_allocate_mem((void **) &d_infos, sizeof(CodeBlockAdditionalInfo) * codeBlocks);
 
 	int magconOffset = 0;
@@ -119,6 +125,18 @@ void encode_bpc_test(const char *file_name) {
 //				if(cblk->coefficients[k * cblk->w + j] > max)
 //					max = cblk->coefficients[k * cblk->w + j];
 			}
+		}
+		for(int bp = 0; bp < 2; ++bp) {
+			printf("bitplane %d\n", bp);
+			for(int k = 0; k < cblk->h; ++k) {
+				for(int j = 0; j < cblk->w; ++j) {
+					bit_printf(cblk->coefficients[k * cblk->w + j], 30 - bp);
+					printf(" ");
+				}
+				printf("\n");
+			}
+			printf("\n");
+			printf("\n");
 		}
 //		binary_printf(max);
 //		binary_printf(cblk->coefficients[0]);
@@ -172,6 +190,7 @@ void encode_bpc_test(const char *file_name) {
 
 	unsigned int *h_cxd_pairs = NULL;
 	cuda_h_allocate_mem((void **) &h_cxd_pairs, sizeof(unsigned int) * codeBlocks * maxOutLength);
+	memset((void *)h_cxd_pairs, 0, sizeof(unsigned int) * codeBlocks * maxOutLength);
 	cuda_memcpy_dth(d_cxd_pairs, h_cxd_pairs, sizeof(unsigned int) * codeBlocks * maxOutLength);
 
 	cuda_memcpy_dth(d_infos, h_infos, sizeof(CodeBlockAdditionalInfo) * codeBlocks);
