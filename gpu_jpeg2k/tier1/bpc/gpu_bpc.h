@@ -48,6 +48,7 @@
 #define NBH_BITPOS 2
 #define RLC_BITPOS 4
 #define CODED_BITPOS 5
+#define CLR_VAR 0x3f4
 
 #define SIGN_BITPOS 31
 #define SIGN 1 << SIGN_BITPOS

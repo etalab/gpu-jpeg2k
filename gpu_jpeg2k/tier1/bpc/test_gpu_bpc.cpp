@@ -21,6 +21,10 @@ extern "C" {
 #include "gpu_bpc.h"
 #include "test_gpu_bpc.h"
 
+#define BRIGHT 1
+#define RED 31
+#define BG_BLACK 40
+
 typedef struct {
 	unsigned char d;
 	unsigned char cx;
@@ -28,6 +32,11 @@ typedef struct {
 	unsigned char bp;
 	unsigned char pass;
 }cxd_pair;
+
+typedef struct {
+	cxd_pair *cxd_pairs;
+	int size;
+}codeblock;
 
 void binary_printf(unsigned int in)
 {
@@ -75,7 +84,7 @@ void encode_bpc_test(const char *file_name) {
 
 	int codeBlocks = mqc_data->cblk_count;
 	// maximum 6 CX, D pairs per coeff in codeblock
-	int maxOutLength = /*mqc_data->cblks[0]->w * mqc_data->cblks[0]->h * 6*/4096*10;
+	int maxOutLength = mqc_data->cblks[0]->w * mqc_data->cblks[0]->h *10;
 
 	printf("codeBlocks %d %d\n", codeBlocks, mqc_data->cblks[0]->cxd_count);
 
@@ -128,7 +137,7 @@ void encode_bpc_test(const char *file_name) {
 			}
 		}
 		/*for(int bp = 0; bp < 3; ++bp) {
-			printf("bitplane %d\n", bp);
+			printf("cd %d bitplane %d\n", i, bp);
 			for(int k = 0; k < cblk->h; ++k) {
 				for(int j = 0; j < cblk->w; ++j) {
 					bit_printf(cblk->coefficients[k * cblk->w + j], 30 - bp);
@@ -171,7 +180,7 @@ void encode_bpc_test(const char *file_name) {
 //				h_infos[i].compType, h_infos[i].dwtLevel, h_infos[i].stepSize);
 	}
 
-//	binary_printf(mqc_data->cblks[0]->coefficients[0]);
+//	binary_printf(mqc_data/->cblks[0]->coefficients[0]);
 
 //	cuda_d_allocate_mem((void **) &d_stBuffors, sizeof(GPU_JPEG2K::CoefficientState) * magconOffset);
 //	CHECK_ERRORS(cudaMemset((void *) d_stBuffors, 0, sizeof(GPU_JPEG2K::CoefficientState) * magconOffset));
@@ -199,18 +208,24 @@ void encode_bpc_test(const char *file_name) {
 //	int bitplanes = h_infos;
 //	int pairs_to_copy = bitplanes * w * h;
 
+	codeblock *codeblocks_ = (codeblock *) malloc(sizeof(codeblock) * codeBlocks);
+
 	int pairs_count = 0;
 	for (int i = 0; i < codeBlocks; ++i) {
+		pairs_count = 0;
 		printf("significantBits %d\n", h_infos[i].significantBits);
 		for(int j = 0; j < h_infos[i].significantBits * w * h; ++j) {
 			pairs_count += h_cxd_pairs[i * maxOutLength + j] & CXD_COUNTER;
 		}
+		codeblocks_[i].size = pairs_count;
+		codeblocks_[i].cxd_pairs = (cxd_pair *) malloc(sizeof(cxd_pair) * codeblocks_[i].size);
 	}
 
-	cxd_pair *cxd_pairs = (cxd_pair *) malloc(sizeof(cxd_pair) * pairs_count);
+//	cxd_pair *cxd_pairs = (cxd_pair *) malloc(sizeof(cxd_pair) * pairs_count);
 
 	int curr_pair = 0;
 	for (int i = 0; i < codeBlocks; ++i) {
+		curr_pair = 0;
 		for(int b = 0; b < h_infos[i].significantBits; ++b) {
 			for(int p = 0; p < 3; ++p) {
 				for(int j = b * w * h; j < (b + 1) * w * h; ++j) {
@@ -228,11 +243,11 @@ void encode_bpc_test(const char *file_name) {
 //								printf("%x\n", h_cxd_pairs[i * maxOutLength + j]);
 //							}
 							int tid = j % (w * h);
-							cxd_pairs[curr_pair].d = d;
-							cxd_pairs[curr_pair].cx = cx;
-							cxd_pairs[curr_pair].tid = tid;
-							cxd_pairs[curr_pair].bp = b;
-							cxd_pairs[curr_pair].pass = pass;
+							codeblocks_[i].cxd_pairs[curr_pair].d = d;
+							codeblocks_[i].cxd_pairs[curr_pair].cx = cx;
+							codeblocks_[i].cxd_pairs[curr_pair].tid = tid;
+							codeblocks_[i].cxd_pairs[curr_pair].bp = b;
+							codeblocks_[i].cxd_pairs[curr_pair].pass = pass;
 							++curr_pair;
 						}
 					}
@@ -240,19 +255,26 @@ void encode_bpc_test(const char *file_name) {
 			}
 		}
 	}
-	printf("curr_pair %d\n", curr_pair);
-	curr_pair = 0;
+//	printf("curr_pair %d\n", curr_pair);
+//	curr_pair = 0;
 	printf("\n\n\n");
 	for (int i = 0; i < codeBlocks; ++i) {
 		printf("codeBlock %d\n", i);
 		struct mqc_data_cblk *cblk = mqc_data->cblks[i];
+		cxd_pair *cblk_pairs = codeblocks_[i].cxd_pairs;
 		for(int j = 0; j < cblk->cxd_count; ++j) {
 			//if((cblk->cxds[j].d != ((h_cxd_pairs[i * maxOutLength + j]&(1<<5)) >> 5)) || (cblk->cxds[j].cx != (h_cxd_pairs[i * maxOutLength + j]&0x1f))) {
-			if((cblk->cxds[j].cx != cxd_pairs[curr_pair].cx) || (cblk->cxds[j].d != cxd_pairs[curr_pair].d)) {
+			if((cblk->cxds[j].cx != cblk_pairs[j].cx) || (cblk->cxds[j].d != cblk_pairs[j].d)) {
+		//		printf("%c[%d;%d;%dm", 0x1B, BRIGHT,RED,BG_BLACK);
+
 				printf("%d) + %d %d", j, cblk->cxds[j].d, cblk->cxds[j].cx);
-				printf("	- %d %d	%d	%x	%d\n", cxd_pairs[curr_pair].d, cxd_pairs[curr_pair].cx, cxd_pairs[curr_pair].tid, cxd_pairs[curr_pair].pass, cxd_pairs[curr_pair].bp);
+				printf("	- %d %d	%d	%x	%d\n", cblk_pairs[j].d, cblk_pairs[j].cx, cblk_pairs[j].tid, cblk_pairs[j].pass, cblk_pairs[j].bp);
+		//		printf("%c[%dm", 0x1B, 0);
+			} else {
+		//		printf("%d) + %d %d", j, cblk->cxds[j].d, cblk->cxds[j].cx);
+                  //       	printf("        - %d %d %d      %x      %d\n", cblk_pairs[j].d, cblk_pairs[j].cx, cblk_pairs[j].tid, cblk_pairs[j].pass, cblk_pairs[j].bp);
 			}
-			curr_pair++;
+//			curr_pair++;
 			//}
 		}
 		/*if (cblk->cxd_count != h_infos[i].length) {
