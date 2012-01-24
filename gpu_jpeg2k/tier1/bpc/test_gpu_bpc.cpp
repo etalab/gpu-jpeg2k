@@ -127,18 +127,18 @@ void encode_bpc_test(const char *file_name) {
 //					max = cblk->coefficients[k * cblk->w + j];
 			}
 		}
-//		for(int bp = 0; bp < 2; ++bp) {
-//			printf("bitplane %d\n", bp);
-//			for(int k = 0; k < cblk->h; ++k) {
-//				for(int j = 0; j < cblk->w; ++j) {
-//					bit_printf(cblk->coefficients[k * cblk->w + j], 30 - bp);
-//					printf(" ");
-//				}
-//				printf("\n");
-//			}
-//			printf("\n");
-//			printf("\n");
-//		}
+		/*for(int bp = 0; bp < 3; ++bp) {
+			printf("bitplane %d\n", bp);
+			for(int k = 0; k < cblk->h; ++k) {
+				for(int j = 0; j < cblk->w; ++j) {
+					bit_printf(cblk->coefficients[k * cblk->w + j], 30 - bp);
+					printf(" ");
+				}
+				printf("\n");
+			}
+			printf("\n");
+			printf("\n");
+		}*/
 //		binary_printf(max);
 //		binary_printf(cblk->coefficients[0]);
 		cuda_d_allocate_mem((void **)&(h_infos[i].coefficients), h_infos[i].width * h_infos[i].height * sizeof(int));
@@ -218,7 +218,7 @@ void encode_bpc_test(const char *file_name) {
 					if(((h_cxd_pairs[i * maxOutLength + j] & SPP) && (h_cxd_pairs[i * maxOutLength + j] & MRP)) ||
 							((h_cxd_pairs[i * maxOutLength + j] & MRP) && (h_cxd_pairs[i * maxOutLength + j] & CUP)) ||
 							((h_cxd_pairs[i * maxOutLength + j] & CUP) && (h_cxd_pairs[i * maxOutLength + j] & SPP)))
-						printf("TWO PASSES! %x\n", h_cxd_pairs[i * maxOutLength + j]);
+						printf("TWO PASSES! %x %d	%d\n", h_cxd_pairs[i * maxOutLength + j], j % (w * h), b);
 					if(h_cxd_pairs[i * maxOutLength + j] & pass) {
 						unsigned char counter = h_cxd_pairs[i * maxOutLength + j] & CXD_COUNTER;
 						for(int k = 0; k < counter; ++k) {

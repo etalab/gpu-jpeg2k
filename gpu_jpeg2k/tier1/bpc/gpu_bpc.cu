@@ -230,22 +230,22 @@ __device__ void magnitudeRefinementCoding(unsigned int coeff[][Code_Block_Size_X
 		// ooo	oo		oo
 		// ox	ox		ox
 		// o	o
-		unsigned char sig =	(((coeff[Y - 1][X + 1] & SIGMA_NEW) /*| (coeff[Y - 1][X + 1] & SIGMA_OLD)*/ | ((coeff[Y - 1][X + 1] >> bitplane) & 1)) && ((TIDY & 3) == 0x0)) | /*tr*/
+		unsigned char sig =	((/*(coeff[Y - 1][X + 1] & SIGMA_NEW) *//*| (coeff[Y - 1][X + 1] & SIGMA_OLD) | */((coeff[Y - 1][X + 1] >> bitplane) & 1)) && ((TIDY & 3) == 0x0)) | /*tr*/
 							((coeff[Y - 1][X] & SIGMA_NEW) | (coeff[Y - 1][X] & SIGMA_OLD) | ((coeff[Y - 1][X] >> bitplane) & 1)) | /*tc*/
 							((coeff[Y - 1][X - 1] & SIGMA_NEW) | (coeff[Y - 1][X - 1] & SIGMA_OLD) | (((coeff[Y - 1][X - 1] >> bitplane) & 1))) | /*tl*/
 							((coeff[Y][X - 1] & SIGMA_NEW) | (coeff[Y][X - 1] & SIGMA_OLD) | (((coeff[Y][X - 1] >> bitplane) & 1))) | /*l*/
-							(((coeff[Y + 1][X - 1] & SIGMA_NEW) /*| (coeff[Y + 1][X - 1] & SIGMA_OLD)*/ | ((coeff[Y + 1][X - 1] >> bitplane) & 1)) && !((TIDY & 3) == 0x3)); /*bl*/
+							((/*(coeff[Y + 1][X - 1] & SIGMA_NEW) *//*| (coeff[Y + 1][X - 1] & SIGMA_OLD) | */((coeff[Y + 1][X - 1] >> bitplane) & 1)) && !((TIDY & 3) == 0x3)); /*bl*/
 
 		// in stripe significance - sigma_old
 		// 11	01,10	00 - stripe position
 		// 	 o	 o
 		//  xo	xo		xo
 		// ooo	oo		oo
-		sig |= ((coeff[Y - 1][X + 1] & SIGMA_OLD)/* && ((TIDY & 3) != 0x0)*/) | /*tr*/
-				(coeff[Y][X + 1] & SIGMA_OLD) | /*r*/
-				(coeff[Y + 1][X + 1] & SIGMA_OLD) | /*br*/
-				(coeff[Y - 1][X] & SIGMA_OLD) | /*bc*/
-				((coeff[Y + 1][X - 1] & SIGMA_OLD)/* && ((TIDY & 3) == 0x3)*/); /*bl*/
+		sig |= ((coeff[Y - 1][X + 1] & SIGMA_OLD) | (coeff[Y - 1][X + 1] & SIGMA_NEW)/* && ((TIDY & 3) != 0x0)*/) | /*tr*/
+				((coeff[Y][X + 1] & SIGMA_OLD) | (coeff[Y][X + 1] & SIGMA_NEW)) | /*r*/
+				((coeff[Y + 1][X + 1] & SIGMA_OLD) | (coeff[Y + 1][X + 1] & SIGMA_NEW)) | /*br*/
+				((coeff[Y - 1][X] & SIGMA_OLD) | (coeff[Y - 1][X] & SIGMA_NEW)) | /*bc*/
+				((coeff[Y + 1][X - 1] & SIGMA_OLD) | (coeff[Y + 1][X - 1] & SIGMA_NEW)/* && ((TIDY & 3) == 0x3)*/); /*bl*/
 
 		unsigned char sigma_prim = (31 - __clz(coeff[Y][X] & 0x7fffffff) - bitplane) > 1;
 		// if sig_prim == 0 and sig > 0 set CX 15, else set CX 14
@@ -427,6 +427,7 @@ __device__ void signCoding(unsigned int coeff[][Code_Block_Size_X + 2*BORDER], u
 		pairs |= (cx << (D1_BITPOS + 1 - shift)); // save CX
 		pairs |= (d << (D1_BITPOS - shift)); // save D
 		pairs |= ((!(coeff[Y][X] & SIGMA_NEW)) << CUP_BITPOS) | ((coeff[Y][X] & SIGMA_NEW) << SPP_BITPOS); // set CUP or SPP, sigma_new differentiate
+		coeff[Y][X] |= SIGMA_NEW;
 //		if((TIDY == 15) && (TIDX == 12) && (bitplane == 29))
 //                	printf("SC %d %d %x\n", TIDY, TIDX, (coeff[Y][X] & SIGMA_NEW));
 //		if((TIDY == 4) && (TIDX == 1))
