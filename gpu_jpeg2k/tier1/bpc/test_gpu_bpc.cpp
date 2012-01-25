@@ -18,6 +18,7 @@ extern "C" {
 #include "../ebcot/mqc/mqc_data.h"
 }
 
+#include <FreeImage.h>
 #include "gpu_bpc.h"
 #include "test_gpu_bpc.h"
 
@@ -37,6 +38,39 @@ typedef struct {
 	cxd_pair *cxd_pairs;
 	int size;
 }codeblock;
+
+typedef unsigned char BYTE;
+
+int save_img_grayscale(struct mqc_data_cblk *cblk, char *filename)
+{
+	int x, y;
+
+	BYTE *bits = (BYTE*) malloc(cblk->h *cblk->w * sizeof(BYTE));
+
+	//	printf("for\n");
+	//exact opposite procedure as in read_img()
+	for (y = 0; y < cblk->h; ++y) {
+		for (x = 0; x < cblk->w; ++x) {
+			bits[y * cblk->w + x] = (BYTE) cblk->coefficients[y * cblk->w + x];
+		}
+	}
+
+	// convert the bitmap to raw bits (top-left pixel first)
+	FIBITMAP *dst = FreeImage_ConvertFromRawBits(bits, cblk->w, cblk->h, cblk->w, 24, FI_RGBA_RED_MASK,
+			FI_RGBA_GREEN_MASK, FI_RGBA_BLUE_MASK, TRUE);
+
+	if (FreeImage_Save(FIF_BMP, dst, filename, 0)) {
+		printf("saved: %s", filename);
+	} else {
+		printf("saving FAILED: %s", filename);
+	}
+
+	FreeImage_Unload(dst);
+	free(bits);
+
+	return 0;
+
+}
 
 void binary_printf(unsigned int in)
 {
@@ -136,7 +170,8 @@ void encode_bpc_test(const char *file_name) {
 //					max = cblk->coefficients[k * cblk->w + j];
 			}
 		}
-		/*for(int bp = 0; bp < 3; ++bp) {
+		if(i == 17)
+		for(int bp = 0; bp < 2; ++bp) {
 			printf("cd %d bitplane %d\n", i, bp);
 			for(int k = 0; k < cblk->h; ++k) {
 				for(int j = 0; j < cblk->w; ++j) {
@@ -147,7 +182,7 @@ void encode_bpc_test(const char *file_name) {
 			}
 			printf("\n");
 			printf("\n");
-		}*/
+		}
 //		binary_printf(max);
 //		binary_printf(cblk->coefficients[0]);
 		cuda_d_allocate_mem((void **)&(h_infos[i].coefficients), h_infos[i].width * h_infos[i].height * sizeof(int));
@@ -185,6 +220,7 @@ void encode_bpc_test(const char *file_name) {
 //	cuda_d_allocate_mem((void **) &d_stBuffors, sizeof(GPU_JPEG2K::CoefficientState) * magconOffset);
 //	CHECK_ERRORS(cudaMemset((void *) d_stBuffors, 0, sizeof(GPU_JPEG2K::CoefficientState) * magconOffset));
 
+//	save_img_grayscale(mqc_data->cblks[17], "cblk17.bmp");
 	cuda_memcpy_htd(h_infos, d_infos, sizeof(CodeBlockAdditionalInfo) * codeBlocks);
 
 	printf("\n");
@@ -213,7 +249,7 @@ void encode_bpc_test(const char *file_name) {
 	int pairs_count = 0;
 	for (int i = 0; i < codeBlocks; ++i) {
 		pairs_count = 0;
-		printf("significantBits %d\n", h_infos[i].significantBits);
+		//printf("significantBits %d\n", h_infos[i].significantBits);
 		for(int j = 0; j < h_infos[i].significantBits * w * h; ++j) {
 			pairs_count += h_cxd_pairs[i * maxOutLength + j] & CXD_COUNTER;
 		}
@@ -270,10 +306,10 @@ void encode_bpc_test(const char *file_name) {
 				printf("%d) + %d %d", j, cblk->cxds[j].d, cblk->cxds[j].cx);
 				printf("	- %d %d	%d	%x	%d\n", cblk_pairs[j].d, cblk_pairs[j].cx, cblk_pairs[j].tid, cblk_pairs[j].pass, cblk_pairs[j].bp);
 		//		printf("%c[%dm", 0x1B, 0);
-			} else {
+			} //else {
 		//		printf("%d) + %d %d", j, cblk->cxds[j].d, cblk->cxds[j].cx);
                   //       	printf("        - %d %d %d      %x      %d\n", cblk_pairs[j].d, cblk_pairs[j].cx, cblk_pairs[j].tid, cblk_pairs[j].pass, cblk_pairs[j].bp);
-			}
+//			}
 //			curr_pair++;
 			//}
 		}
