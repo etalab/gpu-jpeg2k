@@ -3,6 +3,8 @@
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 
+#define THREADS 32
+
 #ifdef __CDT_PARSER__
 #define __global__
 #define __device__
@@ -10,7 +12,6 @@
 #define __shared__
 #endif
 
-#define THREADS 256
 #define MAX_MAG_BITS 20
 
 typedef struct
