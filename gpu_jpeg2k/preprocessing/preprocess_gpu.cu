@@ -212,12 +212,12 @@ void __global__ tcr_kernel(type_data *img_r, type_data *img_g, type_data *img_b,
 		{
 			while(i < TILE_SIZEX && n < width)
 			{
-				y = img_b[idx];
+				y = img_r[idx];
 				u = img_g[idx];
-				v = img_r[idx];
+				v = img_b[idx];
 
 
-				g = y - ((u + v)>>2);
+				g = y - ((v + u)>>2);
 				r = (v + g);
 				b = (u + g);
 
@@ -225,9 +225,9 @@ void __global__ tcr_kernel(type_data *img_r, type_data *img_g, type_data *img_b,
 				g = (type_data)g + (1 << level_shift);
 				r = (type_data)r + (1 << level_shift);
 
-				img_r[idx] = clamp_val(b, min, max);
+				img_r[idx] = clamp_val(r, min, max);
 				img_b[idx] = clamp_val(g, min, max);
-				img_g[idx] = clamp_val(r, min, max);
+				img_g[idx] = clamp_val(b, min, max);
 
 //				img_r[idx] = (type_data)b + (1 << level_shift);
 //				img_b[idx] = (type_data)g + (1 << level_shift);
@@ -291,17 +291,19 @@ void __global__ ict_kernel(type_data *img_r, type_data *img_g, type_data *img_b,
 	{
 		while(i < TILE_SIZEX && n < width)
 		{
-			b = img_b[idx] - (1 << level_shift);
+			b = img_r[idx] - (1 << level_shift);
 			g = img_g[idx] - (1 << level_shift);
-			r = img_r[idx] - (1 << level_shift);
+			r = img_b[idx] - (1 << level_shift);
 
 			y = Wr*r + Wg*g + Wb*b;
-			u = (Umax * ((b - y) / (1 - Wb)));
-			v = (Vmax * ((r - y) / (1 - Wr)));
+			u = -0.16875f * r - 0.33126f * g + 0.5f * b;
+//			u = (Umax * ((b - y) / (1 - Wb)));
+			v = 0.5f * r - 0.41869f * g - 0.08131f * b;
+//			v = (Vmax * ((r - y) / (1 - Wr)));
 
-			img_b[idx] = y;
+			img_r[idx] = y;
 			img_g[idx] = u;
-			img_r[idx] = v;
+			img_b[idx] = v;
 
 /*			img_r[idx] = y;
 			img_g[idx] = u;
