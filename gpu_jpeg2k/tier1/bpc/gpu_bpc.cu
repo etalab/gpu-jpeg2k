@@ -162,11 +162,13 @@ __device__ void cleanUpPassMSB(unsigned int coeff[][Code_Block_Size_X + 2*BORDER
 }
 
 template <char Code_Block_Size_X>
-__device__ void btiplanePreprocessing(unsigned int coeff[][Code_Block_Size_X + 2*BORDER], int &blockVote, const unsigned char bitplane) {
-	volatile int *blockVote_ = &blockVote;
-	if(TID == 0) atomicAnd(&blockVote, 0);
+__device__ void btiplanePreprocessing(unsigned int coeff[][Code_Block_Size_X + 2*BORDER], int *blockVote, const unsigned char bitplane) {
+//	int *blockVote_ = blockVote;
+	if(TID == 0) atomicAnd(blockVote, 0);
+	//blockVote = 0;
 	__syncthreads();
-	assert(blockVote == 0);
+	assert(*blockVote == 0);
+	__syncthreads();
 	// Set sigma_old
 	coeff[Y][X] |= ((coeff[Y][X] & SIGMA_NEW) << 1);
 	// Unset sigma_new
@@ -192,12 +194,14 @@ __device__ void btiplanePreprocessing(unsigned int coeff[][Code_Block_Size_X + 2
 	int warpVote = __any(nbh);
 	__syncthreads();
 	// voting across the blocks
-	if((TID & (32 - 1)) == 0) atomicOr(&blockVote, warpVote);
+	if((TID & (32 - 1)) == 0) atomicOr(blockVote, warpVote);
 	__syncthreads();
 
-	while(*blockVote_) {
+	while(*blockVote) {
 		// first thread of a block will reset the blockVote
-		if(TID == 0) atomicAnd(&blockVote, 0);
+		if(TID == 0) atomicAnd(blockVote, 0);
+		__syncthreads();
+		assert(*blockVote == 0);
 		__syncthreads();
 		warpVote = 0; // reset warpVote to zero
 		// Get the predecessing neighbour significance state variables
@@ -219,11 +223,12 @@ __device__ void btiplanePreprocessing(unsigned int coeff[][Code_Block_Size_X + 2
 		// IF nbh == 1 && bp [ x ][ y ]== 1 && S I G M A _ O L D == 0
                 // THEN set SIGMA_NEW = 1
                 coeff[Y][X] |= ((!((coeff[Y][X] & SIGMA_OLD) >> 1)) & nbh & ((coeff[Y][X] >> bitplane) & 1));
+		__syncthreads();
 		// Voting
 		warpVote = __any(nbh);
 		__syncthreads();
 		// execute it for the first thread of every warp only
-		if((TID & (32 - 1)) == 0) atomicOr(&blockVote, warpVote);
+		if((TID & (32 - 1)) == 0) atomicOr(blockVote, warpVote);
 		__syncthreads();
 	}
 }
@@ -534,7 +539,7 @@ __global__ void bpc_encoder(CodeBlockAdditionalInfo *infos, unsigned int *g_cxds
 		//__syncthreads();
 		cxds[bacy][bacx] = 0;
 	        __syncthreads();
-		btiplanePreprocessing<Code_Block_Size_X>(coeff, blockVote, bitplane);
+		btiplanePreprocessing<Code_Block_Size_X>(coeff, &blockVote, bitplane);
 		__syncthreads();
 	        assert(cxds[bacy][bacx] == 0);
         	__syncthreads();
