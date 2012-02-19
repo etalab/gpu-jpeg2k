@@ -173,7 +173,7 @@ void encode_bpc_test(const char *file_name) {
 //					max = cblk->coefficients[k * cblk->w + j];
 			}
 		}
-		if(i == 33)
+/*		if(i == 21)
 		for(int bp = 0; bp < 2; ++bp) {
 			printf("cd %d bitplane %d\n", i, bp);
 			for(int k = 0; k < cblk->h; ++k) {
@@ -185,7 +185,7 @@ void encode_bpc_test(const char *file_name) {
 			}
 			printf("\n");
 			printf("\n");
-		}
+		}*/
 //		binary_printf(max);
 //		binary_printf(cblk->coefficients[0]);
 		cuda_d_allocate_mem((void **)&(h_infos[i].coefficients), h_infos[i].width * h_infos[i].height * sizeof(int));

@@ -41,8 +41,8 @@ __device__ void save_cxd(unsigned int cxds[][Code_Block_Size_X], unsigned int &p
 	int bacy = floorf(TIDY / 4)*4 + floorf(TIDX / (Code_Block_Size_X >> 2));
 	pairs = (pairs & ~0x7) | ((pairs & 0x7) + add);
 	cxds[bacy][bacx] = pairs;
-	if((cxds[bacy][bacx] & 0x3f) == 0x2a)
-		printf("%x %d %d	%d %d\n", cxds[bacy][bacx], bacy, bacx, TIDY, TIDX);
+//	if((cxds[bacy][bacx] & 0x3f) == 0x2a)
+//		printf("%x %d %d	%d %d\n", cxds[bacy][bacx], bacy, bacx, TIDY, TIDX);
 }
 
 template <char Code_Block_Size_X>
@@ -421,8 +421,8 @@ __device__ void zeroCoding(CodeBlockAdditionalInfo *info, unsigned int coeff[][C
 		pairs |= getSPCX(sig, info->subband) << CX1_BITPOS; // set CX
 		pairs |= ((coeff[Y][X] >> bitplane) & 1) << D1_BITPOS; // set D
 
-		if((TIDY == 10) && (TIDX == 15) && (bitplane == 29) && (blockIdx.x == 33))
-			printf("ZC %d %d %x 	%x\n", TIDY, TIDX, sig, pairs);
+//		if((TIDY == 10) && (TIDX == 15) && (bitplane == 29) && (blockIdx.x == 21))
+//			printf("ZC %d %d %x	coeff %x	%x\n", TIDY, TIDX, sig, coeff[Y + 1][X + 1], pairs);
 
 		save_cxd<Code_Block_Size_X>(cxds, pairs);
 	//		cxds[TIDY][TIDX] = pairs;
@@ -450,8 +450,8 @@ __device__ void signCoding(unsigned int coeff[][Code_Block_Size_X + 2*BORDER], u
 		pairs |= (cx << (D1_BITPOS + 1 - shift)); // save CX
 		pairs |= (d << (D1_BITPOS - shift)); // save D
 		pairs |= ((!(coeff[Y][X] & SIGMA_NEW)) << CUP_BITPOS) | ((coeff[Y][X] & SIGMA_NEW) << SPP_BITPOS); // set CUP or SPP, sigma_new differentiate
-		if((TIDY == 10) && (TIDX == 0) && (bitplane == 29) && (blockIdx.x == 17))
-			printf("SC %d %d %x	%x\n", TIDY, TIDX, (coeff[Y][X] & SIGMA_NEW), pairs);
+//		if((TIDY == 10) && (TIDX == 0) && (bitplane == 29) && (blockIdx.x == 17))
+//			printf("SC %d %d %x	%x\n", TIDY, TIDX, (coeff[Y][X] & SIGMA_NEW), pairs);
 		coeff[Y][X] |= SIGMA_NEW;
 //		if((TIDY == 4) && (TIDX == 1))
 //			printf("SC %x %d %d\n", coeff[Y][X], TIDY, TIDX);
@@ -492,7 +492,7 @@ __global__ void bpc_encoder(CodeBlockAdditionalInfo *infos, unsigned int *g_cxds
 		coeff[0][0] = 0;
 		coeff[info->height + BORDER][0] = 0;
 		coeff[0][info->width + BORDER] = 0;
-		coeff[info->width + BORDER][info->height + BORDER] = 0;
+		coeff[info->height + BORDER][info->width + BORDER] = 0;
 		blockVote = 0;
 	}
 	__syncthreads();
