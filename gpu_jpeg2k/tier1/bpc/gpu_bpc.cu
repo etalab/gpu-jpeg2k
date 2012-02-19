@@ -139,8 +139,8 @@ __device__ void cleanUpPassMSB(unsigned int coeff[][Code_Block_Size_X + 2*BORDER
 		pairs |= (coeff[Y][X] & SIGMA_NEW) << D1_BITPOS; // set D
 
 		pairs |= (1 << CUP_BITPOS);
-//		if((TIDY == 0) && (TIDX == 3))
-//			printf("ZC %x %d %x %d %d %d\n", sig, getSPCX(sig, info->subband), pairs, info->subband, TIDY, TIDX);
+//		if((TIDY == 0) && (TIDX == 4))
+//			printf("ZC %x %d %x %d %d\n", sig, getSPCX(sig, info->subband), pairs, TIDY, TIDX);
 		save_cxd<Code_Block_Size_X>(cxds, pairs);
 //		cxds[TIDY][TIDX] = pairs;
 	}
@@ -537,7 +537,7 @@ __global__ void bpc_encoder(CodeBlockAdditionalInfo *infos, unsigned int *g_cxds
 
 	cleanUpPassMSB<Code_Block_Size_X>(coeff, cxds, info, leastSignificantBP + significantBits - 1);
 	__syncthreads();
-	g_cxds[blockIdx.x * maxOutLength + bacy * info->width + bacx] = cxds[bacy][bacx];
+	g_cxds[blockIdx.x * maxOutLength + bacy * Code_Block_Size_X + bacx] = cxds[bacy][bacx];
 	__syncthreads();
 
 //	printf("id %d	%x\n", blockIdx.x * maxOutLength + bacy * info->width + bacx, cxds[bacy][bacx]);
@@ -579,7 +579,7 @@ __global__ void bpc_encoder(CodeBlockAdditionalInfo *infos, unsigned int *g_cxds
 		__syncthreads();
 
 		//write to global memory
-		g_cxds[blockIdx.x * maxOutLength + i * size + bacy * info->width + bacx] = cxds[bacy][bacx];
+		g_cxds[blockIdx.x * maxOutLength + i * size + bacy * Code_Block_Size_X + bacx] = cxds[bacy][bacx];
 		__syncthreads();
 //		if(i == 1)
 //			printf("id %d\n", blockIdx.x * maxOutLength + i * size + bacy * info->width + bacx);
