@@ -39,6 +39,9 @@ typedef struct {
 	int size;
 }codeblock;
 
+#define CBLK_X 16
+#define CBLK_Y 16
+
 typedef unsigned char BYTE;
 
 int save_img_grayscale(struct mqc_data_cblk *cblk, char *filename)
@@ -118,7 +121,7 @@ void encode_bpc_test(const char *file_name) {
 
 	int codeBlocks = mqc_data->cblk_count;
 	// maximum 6 CX, D pairs per coeff in codeblock
-	int maxOutLength = mqc_data->cblks[0]->w * mqc_data->cblks[0]->h *10;
+	int maxOutLength = CBLK_X * CBLK_Y *12;
 
 	printf("codeBlocks %d %d\n", codeBlocks, mqc_data->cblks[0]->cxd_count);
 
@@ -170,7 +173,7 @@ void encode_bpc_test(const char *file_name) {
 //					max = cblk->coefficients[k * cblk->w + j];
 			}
 		}
-		if(i == 17)
+		if(i == 33)
 		for(int bp = 0; bp < 2; ++bp) {
 			printf("cd %d bitplane %d\n", i, bp);
 			for(int k = 0; k < cblk->h; ++k) {
@@ -225,8 +228,8 @@ void encode_bpc_test(const char *file_name) {
 
 	printf("\n");
 
-	int w = mqc_data->cblks[0]->w;
-	int h = mqc_data->cblks[0]->h;
+	int w = CBLK_X;
+	int h = CBLK_Y;
 	int max_dim = (w > h) ? w : h;
 
 	dim3 gridDim(codeBlocks,1,1);
@@ -245,12 +248,13 @@ void encode_bpc_test(const char *file_name) {
 //	int pairs_to_copy = bitplanes * w * h;
 
 	codeblock *codeblocks_ = (codeblock *) malloc(sizeof(codeblock) * codeBlocks);
+	int cblkc_size = CBLK_X * CBLK_Y;
 
 	int pairs_count = 0;
 	for (int i = 0; i < codeBlocks; ++i) {
 		pairs_count = 0;
 		//printf("significantBits %d\n", h_infos[i].significantBits);
-		for(int j = 0; j < h_infos[i].significantBits * w * h; ++j) {
+		for(int j = 0; j < h_infos[i].significantBits * cblkc_size; ++j) {
 			pairs_count += h_cxd_pairs[i * maxOutLength + j] & CXD_COUNTER;
 		}
 		codeblocks_[i].size = pairs_count;
@@ -265,7 +269,12 @@ void encode_bpc_test(const char *file_name) {
 		for(int b = 0; b < h_infos[i].significantBits; ++b) {
 			for(int p = 0; p < 3; ++p) {
 				for(int j = b * w * h; j < (b + 1) * w * h; ++j) {
-					unsigned char pass = ((p == 0) ? SPP : ((p == 1) ? MRP : CUP));
+					unsigned char pass;
+//					if(b == 0) {
+//						pass = CUP;
+//					} else {
+						pass = ((p == 0) ? SPP : ((p == 1) ? MRP : CUP));
+//					}
 					if(((h_cxd_pairs[i * maxOutLength + j] & SPP) && (h_cxd_pairs[i * maxOutLength + j] & MRP)) ||
 							((h_cxd_pairs[i * maxOutLength + j] & MRP) && (h_cxd_pairs[i * maxOutLength + j] & CUP)) ||
 							((h_cxd_pairs[i * maxOutLength + j] & CUP) && (h_cxd_pairs[i * maxOutLength + j] & SPP)))
@@ -275,10 +284,12 @@ void encode_bpc_test(const char *file_name) {
 						for(int k = 0; k < counter; ++k) {
 							unsigned char d = (h_cxd_pairs[i * maxOutLength + j] >> (D1_BITPOS - k * 6)) & 0x1;
 							unsigned char cx = (h_cxd_pairs[i * maxOutLength + j] >> (CX1_BITPOS - k * 6)) & 0x1f;
-//							if(((j % (w * h)) == 49) && (b == 1)) {
+//							if(((j % (w * h)) == 12) && (b == 0)) {
 //								printf("%x\n", h_cxd_pairs[i * maxOutLength + j]);
 //							}
 							int tid = j % (w * h);
+//							if(b == 0)
+//								printf("%d	%x\n", tid, h_cxd_pairs[i * maxOutLength + j]);
 							codeblocks_[i].cxd_pairs[curr_pair].d = d;
 							codeblocks_[i].cxd_pairs[curr_pair].cx = cx;
 							codeblocks_[i].cxd_pairs[curr_pair].tid = tid;
@@ -300,16 +311,17 @@ void encode_bpc_test(const char *file_name) {
 		cxd_pair *cblk_pairs = codeblocks_[i].cxd_pairs;
 		for(int j = 0; j < cblk->cxd_count; ++j) {
 			//if((cblk->cxds[j].d != ((h_cxd_pairs[i * maxOutLength + j]&(1<<5)) >> 5)) || (cblk->cxds[j].cx != (h_cxd_pairs[i * maxOutLength + j]&0x1f))) {
+//			if(i == 33) {
 			if((cblk->cxds[j].cx != cblk_pairs[j].cx) || (cblk->cxds[j].d != cblk_pairs[j].d)) {
 		//		printf("%c[%d;%d;%dm", 0x1B, BRIGHT,RED,BG_BLACK);
 
 				printf("%d) + %d %d", j, cblk->cxds[j].d, cblk->cxds[j].cx);
 				printf("	- %d %d	%d	%x	%d\n", cblk_pairs[j].d, cblk_pairs[j].cx, cblk_pairs[j].tid, cblk_pairs[j].pass, cblk_pairs[j].bp);
 		//		printf("%c[%dm", 0x1B, 0);
-			} //else {
+//			} //else {
 		//		printf("%d) + %d %d", j, cblk->cxds[j].d, cblk->cxds[j].cx);
                   //       	printf("        - %d %d %d      %x      %d\n", cblk_pairs[j].d, cblk_pairs[j].cx, cblk_pairs[j].tid, cblk_pairs[j].pass, cblk_pairs[j].bp);
-//			}
+			}
 //			curr_pair++;
 			//}
 		}
