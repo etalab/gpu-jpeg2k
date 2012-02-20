@@ -121,7 +121,7 @@ void encode_bpc_test(const char *file_name) {
 
 	int codeBlocks = mqc_data->cblk_count;
 	// maximum 6 CX, D pairs per coeff in codeblock
-	int maxOutLength = CBLK_X * CBLK_Y *12;
+	int maxOutLength = CBLK_X * CBLK_Y *14;
 
 	printf("codeBlocks %d %d\n", codeBlocks, mqc_data->cblks[0]->cxd_count);
 
@@ -173,7 +173,7 @@ void encode_bpc_test(const char *file_name) {
 //					max = cblk->coefficients[k * cblk->w + j];
 			}
 		}
-/*		if(i == 21)
+/*		if(i == 97)
 		for(int bp = 0; bp < 2; ++bp) {
 			printf("cd %d bitplane %d\n", i, bp);
 			for(int k = 0; k < cblk->h; ++k) {
@@ -211,7 +211,7 @@ void encode_bpc_test(const char *file_name) {
 
 		magconOffset += h_infos[i].width * (h_infos[i].stripeNo + 2);
 
-		h_infos[i].MSB = 0;
+//		h_infos[i].MSB = 0;
 
 //		printf("%d %d %d %d %d %d %d %d %d %f\n", h_infos[i].width, h_infos[i].height, h_infos[i].nominalWidth,
 //				h_infos[i].stripeNo, h_infos[i].subband, h_infos[i].magconOffset, h_infos[i].magbits,
@@ -248,13 +248,13 @@ void encode_bpc_test(const char *file_name) {
 //	int pairs_to_copy = bitplanes * w * h;
 
 	codeblock *codeblocks_ = (codeblock *) malloc(sizeof(codeblock) * codeBlocks);
-	int cblkc_size = CBLK_X * CBLK_Y;
+	int cblk_size = CBLK_X * CBLK_Y;
 
 	int pairs_count = 0;
 	for (int i = 0; i < codeBlocks; ++i) {
 		pairs_count = 0;
 		//printf("significantBits %d\n", h_infos[i].significantBits);
-		for(int j = 0; j < h_infos[i].significantBits * cblkc_size; ++j) {
+		for(int j = 0; j < h_infos[i].significantBits * cblk_size; ++j) {
 			pairs_count += h_cxd_pairs[i * maxOutLength + j] & CXD_COUNTER;
 		}
 		codeblocks_[i].size = pairs_count;

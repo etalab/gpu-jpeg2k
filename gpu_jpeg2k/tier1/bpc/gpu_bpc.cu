@@ -62,6 +62,10 @@ __device__ void cleanUpPassMSB(unsigned int coeff[][Code_Block_Size_X + 2*BORDER
 	atomicOr(&coeff[((Y - BORDER) & 0xfffffffc) + BORDER][X], coeff[Y][X] & RLC);
 	__syncthreads();
 
+	// clear stripe
+	coeff[Y][X] &= ~0x3c0;
+	__syncthreads();
+
 	// get 4 bits of current stripe
 	int shift = 6 + (TIDY & 3);
 
@@ -70,6 +74,7 @@ __device__ void cleanUpPassMSB(unsigned int coeff[][Code_Block_Size_X + 2*BORDER
 
 	unsigned char rlc = coeff[Y][X] & (1 << RLC_BITPOS);
 	coeff[Y][X] = coeff[Y][X] & (~(1 << RLC_BITPOS));
+	__syncthreads();
 
 	// RLC
 	if(((TIDY & (4 - 1)) == 0) && ((TIDY + 3) < info->height)) {
@@ -118,8 +123,12 @@ __device__ void cleanUpPassMSB(unsigned int coeff[][Code_Block_Size_X + 2*BORDER
 			save_cxd<Code_Block_Size_X>(cxds, pairs, (cx17_d && 1) - (cx17_d == 0) + 2);
 		}
 	}
-//	}
 	__syncthreads();
+//	}
+//	if((TIDY == 0) && (TIDX == 0) && (blockIdx.x == 6)) {
+//		printf("RLC %x	%x %d %d %d\n", coeff[Y][X], pairs, bitplane, TIDY, TIDX);
+//	}
+//	__syncthreads();
 
 //	printf("%x\n", coeff[Y][X]);
 	// ZC
@@ -476,19 +485,20 @@ __global__ void bpc_encoder(CodeBlockAdditionalInfo *infos, unsigned int *g_cxds
 	}
 
 	if((TIDX >= info->width) || (TIDY >= info->height)) return;
+	__syncthreads();
 
 	// set borders to zero - not efficient way...
-	if((TIDX < Code_Block_Size_X) && (TIDY == 0)) {
+	if(/*(TIDX < Code_Block_Size_X) && */(TIDY == 0)) {
 		coeff[0][TIDX + BORDER] = 0;
 		coeff[info->height + BORDER][TIDX + BORDER] = 0;
 	}
 
-	if((TIDY < Code_Block_Size_X) && (TIDX == 0)) {
+	if(/*(TIDY < Code_Block_Size_X) && */(TIDX == 0)) {
 		coeff[TIDY + BORDER][0] = 0;
 		coeff[TIDY + BORDER][info->width + BORDER] = 0;
 	}
 
-	if((TIDX == 0) && (TIDY == 0)) {
+	if(TID == 0) {
 		coeff[0][0] = 0;
 		coeff[info->height + BORDER][0] = 0;
 		coeff[0][info->width + BORDER] = 0;
@@ -497,25 +507,23 @@ __global__ void bpc_encoder(CodeBlockAdditionalInfo *infos, unsigned int *g_cxds
 	}
 	__syncthreads();
 
-	if((TIDX >= info->width) || (TIDY >= info->height)) return;
-
-	int cache_value = info->coefficients[TIDY * info->nominalWidth + TIDX];
+	int cache_value = info->coefficients[TIDY * info->width + TIDX];
 	coeff[Y][X] = cache_value/* < 0 ? (1 << 31) | (-cache_value) : cache_value*/;
 	__syncthreads();
 
 	// find most significant bitplane
 	unsigned int tmp = 0;
-	if((TIDX < Code_Block_Size_X) && (TIDY == 0)) {
-		for(int i = BORDER; i < Code_Block_Size_X + BORDER; ++i) {
-			tmp = max(tmp, coeff[X][i] & MAGBITS);
+	if(/*(TIDY < info->height) && */(TIDX == 0)) {
+		for(int i = BORDER; i < info->width + BORDER; ++i) {
+			tmp = max(tmp, coeff[Y][i] & MAGBITS);
 		}
-		maxs[TIDX] = tmp;
+		maxs[TIDY] = tmp;
 	}
 	__syncthreads();
 
-	if((TIDX == 0) && (TIDY == 0)) {
+	if(TID == 0) {
 		tmp = 0;
-		for(int i = 0; i < Code_Block_Size_X; ++i) {
+		for(int i = 0; i < info->height; ++i) {
 			tmp = max(tmp, maxs[i]);
 		}
 		maxs[0] = 31 - __clz(tmp);
@@ -530,6 +538,9 @@ __global__ void bpc_encoder(CodeBlockAdditionalInfo *infos, unsigned int *g_cxds
 	// floor(i /4) * 4 + floor(j /(DIM /4))
 	int bacy = floorf(TIDY / 4)*4 + floorf(TIDX / (Code_Block_Size_X >> 2));
 
+//	if((TIDY == 1) && (TIDX == 3) && (blockIdx.x == 6)) {
+//		printf("RLC %d %d %x	%d %d %d\n", info->width, info->height, coeff[Y][X], maxs[0], TIDY, TIDX);
+//	}
 //	printf("%d\n", leastSignificantBP + significantBits - 1);
 	// set cxds to zero, for RLC
 	cxds[bacy][bacx] = 0;
