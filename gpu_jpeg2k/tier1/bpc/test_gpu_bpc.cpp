@@ -21,6 +21,7 @@ extern "C" {
 #include <FreeImage.h>
 #include "gpu_bpc.h"
 #include "test_gpu_bpc.h"
+#include "gpu_convert.h"
 
 #define BRIGHT 1
 #define RED 31
@@ -106,6 +107,164 @@ void print_cxd(unsigned int pairs) {
 		unsigned char d = (pairs >> (D1_BITPOS - i * 6)) & 0x1;
 		unsigned char cx = (pairs >> (CX1_BITPOS - i * 6)) & 0x1f;
 		printf("- %d %d\n", d, cx);
+	}
+}
+
+void check(unsigned int *d_cxd_pairs, CodeBlockAdditionalInfo *h_infos, int w, int h, struct mqc_data* mqc_data, int codeBlocks, int maxOutLength) {
+	unsigned int *h_cxd_pairs = NULL;
+	cuda_h_allocate_mem((void **) &h_cxd_pairs, sizeof(unsigned int) * codeBlocks * maxOutLength);
+	memset((void *)h_cxd_pairs, 0, sizeof(unsigned int) * codeBlocks * maxOutLength);
+	cuda_memcpy_dth(d_cxd_pairs, h_cxd_pairs, sizeof(unsigned int) * codeBlocks * maxOutLength);
+
+//	int bitplanes = h_infos;
+//	int pairs_to_copy = bitplanes * w * h;
+
+	codeblock *codeblocks_ = (codeblock *) malloc(sizeof(codeblock) * codeBlocks);
+	int cblk_size = CBLK_X * CBLK_Y;
+
+	int pairs_count = 0;
+	for (int i = 0; i < codeBlocks; ++i) {
+		pairs_count = 0;
+		//printf("significantBits %d\n", h_infos[i].significantBits);
+		for(int j = 0; j < h_infos[i].significantBits * cblk_size; ++j) {
+			pairs_count += h_cxd_pairs[i * maxOutLength + j] & CXD_COUNTER;
+		}
+		codeblocks_[i].size = pairs_count;
+		codeblocks_[i].cxd_pairs = (cxd_pair *) malloc(sizeof(cxd_pair) * codeblocks_[i].size);
+	}
+
+//	cxd_pair *cxd_pairs = (cxd_pair *) malloc(sizeof(cxd_pair) * pairs_count);
+
+	int curr_pair = 0;
+	for (int i = 0; i < codeBlocks; ++i) {
+		curr_pair = 0;
+		for(int b = 0; b < h_infos[i].significantBits; ++b) {
+			for(int p = 0; p < 3; ++p) {
+				for(int j = b * w * h; j < (b + 1) * w * h; ++j) {
+					unsigned char pass;
+//					if(b == 0) {
+//						pass = CUP;
+//					} else {
+						pass = ((p == 0) ? SPP : ((p == 1) ? MRP : CUP));
+//					}
+					if(((h_cxd_pairs[i * maxOutLength + j] & SPP) && (h_cxd_pairs[i * maxOutLength + j] & MRP)) ||
+							((h_cxd_pairs[i * maxOutLength + j] & MRP) && (h_cxd_pairs[i * maxOutLength + j] & CUP)) ||
+							((h_cxd_pairs[i * maxOutLength + j] & CUP) && (h_cxd_pairs[i * maxOutLength + j] & SPP)))
+						printf("TWO PASSES! %x %d	%d\n", h_cxd_pairs[i * maxOutLength + j], j % (w * h), b);
+					if(h_cxd_pairs[i * maxOutLength + j] & pass) {
+						unsigned char counter = h_cxd_pairs[i * maxOutLength + j] & CXD_COUNTER;
+						for(int k = 0; k < counter; ++k) {
+							unsigned char d = (h_cxd_pairs[i * maxOutLength + j] >> (D1_BITPOS - k * 6)) & 0x1;
+							unsigned char cx = (h_cxd_pairs[i * maxOutLength + j] >> (CX1_BITPOS - k * 6)) & 0x1f;
+//							if(((j % (w * h)) == 12) && (b == 0)) {
+//								printf("%x\n", h_cxd_pairs[i * maxOutLength + j]);
+//							}
+							int tid = j % (w * h);
+//							if(b == 0)
+//								printf("%d	%x\n", tid, h_cxd_pairs[i * maxOutLength + j]);
+							codeblocks_[i].cxd_pairs[curr_pair].d = d;
+							codeblocks_[i].cxd_pairs[curr_pair].cx = cx;
+							codeblocks_[i].cxd_pairs[curr_pair].tid = tid;
+							codeblocks_[i].cxd_pairs[curr_pair].bp = b;
+							codeblocks_[i].cxd_pairs[curr_pair].pass = pass;
+							++curr_pair;
+						}
+					}
+				}
+			}
+		}
+	}
+//	printf("curr_pair %d\n", curr_pair);
+//	curr_pair = 0;
+	printf("\n\n\n");
+	for (int i = 0; i < codeBlocks; ++i) {
+		printf("codeBlock %d\n", i);
+		struct mqc_data_cblk *cblk = mqc_data->cblks[i];
+		cxd_pair *cblk_pairs = codeblocks_[i].cxd_pairs;
+		for(int j = 0; j < cblk->cxd_count; ++j) {
+			//if((cblk->cxds[j].d != ((h_cxd_pairs[i * maxOutLength + j]&(1<<5)) >> 5)) || (cblk->cxds[j].cx != (h_cxd_pairs[i * maxOutLength + j]&0x1f))) {
+//			if(i == 33) {
+			if((cblk->cxds[j].cx != cblk_pairs[j].cx) || (cblk->cxds[j].d != cblk_pairs[j].d)) {
+		//		printf("%c[%d;%d;%dm", 0x1B, BRIGHT,RED,BG_BLACK);
+
+				printf("%d) + %d %d", j, cblk->cxds[j].d, cblk->cxds[j].cx);
+				printf("	- %d %d	%d	%x	%d\n", cblk_pairs[j].d, cblk_pairs[j].cx, cblk_pairs[j].tid, cblk_pairs[j].pass, cblk_pairs[j].bp);
+		//		printf("%c[%dm", 0x1B, 0);
+//			} //else {
+		//		printf("%d) + %d %d", j, cblk->cxds[j].d, cblk->cxds[j].cx);
+                  //       	printf("        - %d %d %d      %x      %d\n", cblk_pairs[j].d, cblk_pairs[j].cx, cblk_pairs[j].tid, cblk_pairs[j].pass, cblk_pairs[j].bp);
+			}
+//			curr_pair++;
+			//}
+		}
+		/*if (cblk->cxd_count != h_infos[i].length) {
+			std::cerr << cblk->cxd_count << " != " << h_infos[i].length << std::endl;
+			for(int j = 0; j < h_infos[i].length; ++j) {
+//				if(cblk->cxds[j] != h_cxd_pairs[i * maxOutLength + j]) {
+					std::cerr << i <<  ") ";
+					if(j < cblk->cxd_count)
+						binary_printf((cblk->cxds[j].d << 5) | cblk->cxds[j].cx);
+					std::cerr << "   ";
+					binary_printf(h_cxd_pairs[i * maxOutLength + j]);
+					std::cerr << std::endl;
+//				}
+			}
+		}*/
+	}
+}
+
+void check_order(unsigned char *d_order_cxd_pairs, CodeBlockAdditionalInfo *infos, struct mqc_data* mqc_data, int codeBlocks, int byteMaxOutLength) {
+	unsigned char *h_order_cxd_pairs = NULL;
+	cuda_h_allocate_mem((void **) &h_order_cxd_pairs, sizeof(unsigned char) * codeBlocks * byteMaxOutLength);
+	memset((void *)h_order_cxd_pairs, 0, sizeof(unsigned char) * codeBlocks * byteMaxOutLength);
+	cuda_memcpy_dth(d_order_cxd_pairs, h_order_cxd_pairs, sizeof(unsigned char) * codeBlocks * byteMaxOutLength);
+
+	codeblock *codeblocks_ = (codeblock *) malloc(sizeof(codeblock) * codeBlocks);
+	int cblk_size = CBLK_X * CBLK_Y;
+
+	for (int i = 0; i < codeBlocks; ++i) {
+		codeblocks_[i].size = infos[i].magconOffset;
+		codeblocks_[i].cxd_pairs = (cxd_pair *) malloc(sizeof(cxd_pair) * codeblocks_[i].size);
+	}
+
+	int curr_pair = 0;
+	for (int i = 0; i < codeBlocks; ++i) {
+		curr_pair = 0;
+		for(int j = 0; j < infos[i].magconOffset; ++j) {
+			unsigned char d = h_order_cxd_pairs[i * byteMaxOutLength + j] >> 5;
+			unsigned char cx = h_order_cxd_pairs[i * byteMaxOutLength + j] & 0x1f;
+			codeblocks_[i].cxd_pairs[curr_pair].d = d;
+			codeblocks_[i].cxd_pairs[curr_pair].cx = cx;
+			codeblocks_[i].cxd_pairs[curr_pair].tid = 0;
+			codeblocks_[i].cxd_pairs[curr_pair].bp = 0;
+			codeblocks_[i].cxd_pairs[curr_pair].pass = 0;
+			++curr_pair;
+		}
+	}
+
+	for (int i = 0; i < codeBlocks; ++i) {
+		printf("codeBlock %d\n", i);
+		struct mqc_data_cblk *cblk = mqc_data->cblks[i];
+		cxd_pair *cblk_pairs = codeblocks_[i].cxd_pairs;
+		for(int j = 0; j < cblk->cxd_count; ++j) {
+			if((cblk->cxds[j].cx != cblk_pairs[j].cx) || (cblk->cxds[j].d != cblk_pairs[j].d)) {
+				printf("%d) + %d %d", j, cblk->cxds[j].d, cblk->cxds[j].cx);
+				printf("	- %d %d	%d	%x	%d\n", cblk_pairs[j].d, cblk_pairs[j].cx, cblk_pairs[j].tid, cblk_pairs[j].pass, cblk_pairs[j].bp);
+			}
+		}
+		/*if (cblk->cxd_count != h_infos[i].length) {
+			std::cerr << cblk->cxd_count << " != " << h_infos[i].length << std::endl;
+			for(int j = 0; j < h_infos[i].length; ++j) {
+//				if(cblk->cxds[j] != h_cxd_pairs[i * maxOutLength + j]) {
+					std::cerr << i <<  ") ";
+					if(j < cblk->cxd_count)
+						binary_printf((cblk->cxds[j].d << 5) | cblk->cxds[j].cx);
+					std::cerr << "   ";
+					binary_printf(h_cxd_pairs[i * maxOutLength + j]);
+					std::cerr << std::endl;
+//				}
+			}
+		}*/
 	}
 }
 
@@ -211,7 +370,7 @@ void encode_bpc_test(const char *file_name) {
 
 		magconOffset += h_infos[i].width * (h_infos[i].stripeNo + 2);
 
-//		h_infos[i].MSB = 0;
+		h_infos[i].MSB = 0;
 
 //		printf("%d %d %d %d %d %d %d %d %d %f\n", h_infos[i].width, h_infos[i].height, h_infos[i].nominalWidth,
 //				h_infos[i].stripeNo, h_infos[i].subband, h_infos[i].magconOffset, h_infos[i].magbits,
@@ -237,106 +396,14 @@ void encode_bpc_test(const char *file_name) {
 
 	launch_bpc_encode(gridDim, blockDim, d_infos, d_cxd_pairs, maxOutLength);
 
-	unsigned int *h_cxd_pairs = NULL;
-	cuda_h_allocate_mem((void **) &h_cxd_pairs, sizeof(unsigned int) * codeBlocks * maxOutLength);
-	memset((void *)h_cxd_pairs, 0, sizeof(unsigned int) * codeBlocks * maxOutLength);
-	cuda_memcpy_dth(d_cxd_pairs, h_cxd_pairs, sizeof(unsigned int) * codeBlocks * maxOutLength);
+	unsigned char *d_order_cxd_pairs = NULL;
+	cuda_d_allocate_mem((void **) &d_order_cxd_pairs, sizeof(unsigned char) * codeBlocks * maxOutLength * 4);
+	cuda_d_memset(d_order_cxd_pairs, 0, sizeof(unsigned char) * codeBlocks * maxOutLength * 4);
+	convert(gridDim, blockDim, d_infos, d_cxd_pairs, d_order_cxd_pairs, maxOutLength);
 
 	cuda_memcpy_dth(d_infos, h_infos, sizeof(CodeBlockAdditionalInfo) * codeBlocks);
 
-//	int bitplanes = h_infos;
-//	int pairs_to_copy = bitplanes * w * h;
+	check_order(d_order_cxd_pairs, h_infos, mqc_data, codeBlocks, maxOutLength * 4);
 
-	codeblock *codeblocks_ = (codeblock *) malloc(sizeof(codeblock) * codeBlocks);
-	int cblk_size = CBLK_X * CBLK_Y;
-
-	int pairs_count = 0;
-	for (int i = 0; i < codeBlocks; ++i) {
-		pairs_count = 0;
-		//printf("significantBits %d\n", h_infos[i].significantBits);
-		for(int j = 0; j < h_infos[i].significantBits * cblk_size; ++j) {
-			pairs_count += h_cxd_pairs[i * maxOutLength + j] & CXD_COUNTER;
-		}
-		codeblocks_[i].size = pairs_count;
-		codeblocks_[i].cxd_pairs = (cxd_pair *) malloc(sizeof(cxd_pair) * codeblocks_[i].size);
-	}
-
-//	cxd_pair *cxd_pairs = (cxd_pair *) malloc(sizeof(cxd_pair) * pairs_count);
-
-	int curr_pair = 0;
-	for (int i = 0; i < codeBlocks; ++i) {
-		curr_pair = 0;
-		for(int b = 0; b < h_infos[i].significantBits; ++b) {
-			for(int p = 0; p < 3; ++p) {
-				for(int j = b * w * h; j < (b + 1) * w * h; ++j) {
-					unsigned char pass;
-//					if(b == 0) {
-//						pass = CUP;
-//					} else {
-						pass = ((p == 0) ? SPP : ((p == 1) ? MRP : CUP));
-//					}
-					if(((h_cxd_pairs[i * maxOutLength + j] & SPP) && (h_cxd_pairs[i * maxOutLength + j] & MRP)) ||
-							((h_cxd_pairs[i * maxOutLength + j] & MRP) && (h_cxd_pairs[i * maxOutLength + j] & CUP)) ||
-							((h_cxd_pairs[i * maxOutLength + j] & CUP) && (h_cxd_pairs[i * maxOutLength + j] & SPP)))
-						printf("TWO PASSES! %x %d	%d\n", h_cxd_pairs[i * maxOutLength + j], j % (w * h), b);
-					if(h_cxd_pairs[i * maxOutLength + j] & pass) {
-						unsigned char counter = h_cxd_pairs[i * maxOutLength + j] & CXD_COUNTER;
-						for(int k = 0; k < counter; ++k) {
-							unsigned char d = (h_cxd_pairs[i * maxOutLength + j] >> (D1_BITPOS - k * 6)) & 0x1;
-							unsigned char cx = (h_cxd_pairs[i * maxOutLength + j] >> (CX1_BITPOS - k * 6)) & 0x1f;
-//							if(((j % (w * h)) == 12) && (b == 0)) {
-//								printf("%x\n", h_cxd_pairs[i * maxOutLength + j]);
-//							}
-							int tid = j % (w * h);
-//							if(b == 0)
-//								printf("%d	%x\n", tid, h_cxd_pairs[i * maxOutLength + j]);
-							codeblocks_[i].cxd_pairs[curr_pair].d = d;
-							codeblocks_[i].cxd_pairs[curr_pair].cx = cx;
-							codeblocks_[i].cxd_pairs[curr_pair].tid = tid;
-							codeblocks_[i].cxd_pairs[curr_pair].bp = b;
-							codeblocks_[i].cxd_pairs[curr_pair].pass = pass;
-							++curr_pair;
-						}
-					}
-				}
-			}
-		}
-	}
-//	printf("curr_pair %d\n", curr_pair);
-//	curr_pair = 0;
-	printf("\n\n\n");
-	for (int i = 0; i < codeBlocks; ++i) {
-		printf("codeBlock %d\n", i);
-		struct mqc_data_cblk *cblk = mqc_data->cblks[i];
-		cxd_pair *cblk_pairs = codeblocks_[i].cxd_pairs;
-		for(int j = 0; j < cblk->cxd_count; ++j) {
-			//if((cblk->cxds[j].d != ((h_cxd_pairs[i * maxOutLength + j]&(1<<5)) >> 5)) || (cblk->cxds[j].cx != (h_cxd_pairs[i * maxOutLength + j]&0x1f))) {
-//			if(i == 33) {
-			if((cblk->cxds[j].cx != cblk_pairs[j].cx) || (cblk->cxds[j].d != cblk_pairs[j].d)) {
-		//		printf("%c[%d;%d;%dm", 0x1B, BRIGHT,RED,BG_BLACK);
-
-				printf("%d) + %d %d", j, cblk->cxds[j].d, cblk->cxds[j].cx);
-				printf("	- %d %d	%d	%x	%d\n", cblk_pairs[j].d, cblk_pairs[j].cx, cblk_pairs[j].tid, cblk_pairs[j].pass, cblk_pairs[j].bp);
-		//		printf("%c[%dm", 0x1B, 0);
-//			} //else {
-		//		printf("%d) + %d %d", j, cblk->cxds[j].d, cblk->cxds[j].cx);
-                  //       	printf("        - %d %d %d      %x      %d\n", cblk_pairs[j].d, cblk_pairs[j].cx, cblk_pairs[j].tid, cblk_pairs[j].pass, cblk_pairs[j].bp);
-			}
-//			curr_pair++;
-			//}
-		}
-		/*if (cblk->cxd_count != h_infos[i].length) {
-			std::cerr << cblk->cxd_count << " != " << h_infos[i].length << std::endl;
-			for(int j = 0; j < h_infos[i].length; ++j) {
-//				if(cblk->cxds[j] != h_cxd_pairs[i * maxOutLength + j]) {
-					std::cerr << i <<  ") ";
-					if(j < cblk->cxd_count)
-						binary_printf((cblk->cxds[j].d << 5) | cblk->cxds[j].cx);
-					std::cerr << "   ";
-					binary_printf(h_cxd_pairs[i * maxOutLength + j]);
-					std::cerr << std::endl;
-//				}
-			}
-		}*/
-	}
+//	check(d_cxd_pairs, h_infos, w, h, mqc_data, codeBlocks, maxOutLength);
 }
