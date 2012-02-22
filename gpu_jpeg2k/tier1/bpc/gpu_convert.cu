@@ -226,10 +226,12 @@ __device__ void pass(CodeBlockAdditionalInfo *infos, unsigned int cxds[][Code_Bl
 	pos[TIDY][TIDX] += sum[TIDY];
 	__syncthreads();
 
-	for(unsigned char k = 0; k < (cxds[Y][X] & CXD_COUNTER) * ((cxds[Y][X] & Pass) >> Bitpos); ++k) {
+	unsigned char counter = (cxds[Y][X] & CXD_COUNTER) * ((cxds[Y][X] & Pass) >> Bitpos);
+
+	for(unsigned char k = 0; k < counter; ++k) {
 //		ocxds[pos[TIDY][TIDX] - offset + k] =
-		g_ocxds[blockIdx.x * maxOutLength * 4 + pos[TIDY][TIDX] + k] =
-				(((cxds[Y][X] >> (D1_BITPOS - k * 6)) & 0x1) << 5) | ((cxds[Y][X] >> (CX1_BITPOS - k * 6)) & 0x1f);
+		g_ocxds[blockIdx.x * maxOutLength * 4 + pos[TIDY][TIDX] + k] = ((cxds[Y][X] >> (D1_BITPOS - k * 6)) & 0x3f);
+//				(((cxds[Y][X] >> (D1_BITPOS - k * 6)) & 0x1) << 5) | ((cxds[Y][X] >> (CX1_BITPOS - k * 6)) & 0x1f);
 //		printf("%x	%x	%d	%d	%d	%d	%d\n", cxds[Y][X], Pass, ((cxds[Y][X] >> (D1_BITPOS - k * 6)) & 0x1), ((cxds[Y][X] >> (CX1_BITPOS - k * 6)) & 0x1f), blockIdx.x * maxOutLength * 4 + pos[TIDY][TIDX] + k, TIDY, TIDX);
 //		printf("%x	%d	%d	%d	%d	%d\n", ocxds[pos[TIDY][TIDX] + k], ((cxds[Y][X] >> (D1_BITPOS - k * 6)) & 0x1), ((cxds[Y][X] >> (CX1_BITPOS - k * 6)) & 0x1f), pos[TIDY][TIDX] + k, TIDY, TIDX);
 	}
@@ -244,7 +246,7 @@ __device__ void pass(CodeBlockAdditionalInfo *infos, unsigned int cxds[][Code_Bl
 //	if(TID == 0) printf("offset %d	%d	%d\n", offset, TIDY, TIDX);
 
 	if((TIDY == (Code_Block_Size_X - 1)) && (TIDX == (Code_Block_Size_X - 1))) {
-		offset = pos[TIDY][TIDX] + ((cxds[Y][X] & Pass) >> Bitpos) * (cxds[Y][X] & CXD_COUNTER);
+		offset = pos[TIDY][TIDX] + counter;
 //		printf("size %d pos %d\n", offset, pos[TIDY][TIDX]);
 	}
 	__syncthreads();

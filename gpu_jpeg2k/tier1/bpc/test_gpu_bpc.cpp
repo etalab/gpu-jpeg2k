@@ -218,6 +218,7 @@ void check_order(unsigned char *d_order_cxd_pairs, CodeBlockAdditionalInfo *info
 	cuda_h_allocate_mem((void **) &h_order_cxd_pairs, sizeof(unsigned char) * codeBlocks * byteMaxOutLength);
 	memset((void *)h_order_cxd_pairs, 0, sizeof(unsigned char) * codeBlocks * byteMaxOutLength);
 	cuda_memcpy_dth(d_order_cxd_pairs, h_order_cxd_pairs, sizeof(unsigned char) * codeBlocks * byteMaxOutLength);
+	cuda_d_free(d_order_cxd_pairs);
 
 	codeblock *codeblocks_ = (codeblock *) malloc(sizeof(codeblock) * codeBlocks);
 	int cblk_size = CBLK_X * CBLK_Y;
@@ -231,8 +232,8 @@ void check_order(unsigned char *d_order_cxd_pairs, CodeBlockAdditionalInfo *info
 	for (int i = 0; i < codeBlocks; ++i) {
 		curr_pair = 0;
 		for(int j = 0; j < infos[i].magconOffset; ++j) {
-			unsigned char d = h_order_cxd_pairs[i * byteMaxOutLength + j] >> 5;
-			unsigned char cx = h_order_cxd_pairs[i * byteMaxOutLength + j] & 0x1f;
+			unsigned char d = h_order_cxd_pairs[i * byteMaxOutLength + j] & 0x1/*>> 5*/;
+			unsigned char cx = (h_order_cxd_pairs[i * byteMaxOutLength + j] >> 1) & 0x3f;
 			codeblocks_[i].cxd_pairs[curr_pair].d = d;
 			codeblocks_[i].cxd_pairs[curr_pair].cx = cx;
 			codeblocks_[i].cxd_pairs[curr_pair].tid = 0;
@@ -241,6 +242,7 @@ void check_order(unsigned char *d_order_cxd_pairs, CodeBlockAdditionalInfo *info
 			++curr_pair;
 		}
 	}
+	cuda_h_free(h_order_cxd_pairs);
 
 	for (int i = 0; i < codeBlocks; ++i) {
 		printf("codeBlock %d\n", i);
@@ -401,6 +403,7 @@ void encode_bpc_test(const char *file_name) {
 	cuda_d_memset(d_order_cxd_pairs, 0, sizeof(unsigned char) * codeBlocks * maxOutLength * 4);
 	convert(gridDim, blockDim, d_infos, d_cxd_pairs, d_order_cxd_pairs, maxOutLength);
 
+	cuda_d_free(d_cxd_pairs);
 	cuda_memcpy_dth(d_infos, h_infos, sizeof(CodeBlockAdditionalInfo) * codeBlocks);
 
 	check_order(d_order_cxd_pairs, h_infos, mqc_data, codeBlocks, maxOutLength * 4);

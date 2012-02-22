@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
-#include <assert.h>
+//#include <assert.h>
 #include "gpu_bpc.h"
 
 __device__ void dbinary_printf(unsigned int in)
@@ -184,8 +184,8 @@ __device__ void btiplanePreprocessing(unsigned int coeff[][Code_Block_Size_X + 2
 	if(TID == 0) atomicAnd(blockVote, 0);
 	//blockVote = 0;
 	__syncthreads();
-	assert(*blockVote == 0);
-	__syncthreads();
+//	assert(*blockVote == 0);
+//	__syncthreads();
 	// Set sigma_old
 	coeff[Y][X] |= ((coeff[Y][X] & SIGMA_NEW) << 1);
 	// Unset sigma_new
@@ -218,8 +218,8 @@ __device__ void btiplanePreprocessing(unsigned int coeff[][Code_Block_Size_X + 2
 		// first thread of a block will reset the blockVote
 		if(TID == 0) atomicAnd(blockVote, 0);
 		__syncthreads();
-		assert(*blockVote == 0);
-		__syncthreads();
+//		assert(*blockVote == 0);
+//		__syncthreads();
 		warpVote = 0; // reset warpVote to zero
 		// Get the predecessing neighbour significance state variables
 		nbh = (((coeff[Y - 1][X + 1] & SIGMA_NEW) & ((TIDY & 3) == 0x0)) |
@@ -238,8 +238,8 @@ __device__ void btiplanePreprocessing(unsigned int coeff[][Code_Block_Size_X + 2
 		__syncthreads();
 	//	. . .
 		// IF nbh == 1 && bp [ x ][ y ]== 1 && S I G M A _ O L D == 0
-                // THEN set SIGMA_NEW = 1
-                coeff[Y][X] |= ((!((coeff[Y][X] & SIGMA_OLD) >> 1)) & nbh & ((coeff[Y][X] >> bitplane) & 1));
+		// THEN set SIGMA_NEW = 1
+		coeff[Y][X] |= ((!((coeff[Y][X] & SIGMA_OLD) >> 1)) & nbh & ((coeff[Y][X] >> bitplane) & 1));
 		__syncthreads();
 		// Voting
 		warpVote = __any(nbh);
@@ -484,19 +484,18 @@ __global__ void bpc_encoder(CodeBlockAdditionalInfo *infos, unsigned int *g_cxds
 		return;
 	}
 
-	if((TIDX >= info->width) || (TIDY >= info->height)) return;
-	__syncthreads();
-
 	// set borders to zero - not efficient way...
 	if(/*(TIDX < Code_Block_Size_X) && */(TIDY == 0)) {
 		coeff[0][TIDX + BORDER] = 0;
 		coeff[info->height + BORDER][TIDX + BORDER] = 0;
+		coeff[TIDX + BORDER][0] = 0;
+		coeff[TIDX + BORDER][info->width + BORDER] = 0;
 	}
 
-	if(/*(TIDY < Code_Block_Size_X) && */(TIDX == 0)) {
-		coeff[TIDY + BORDER][0] = 0;
-		coeff[TIDY + BORDER][info->width + BORDER] = 0;
-	}
+//	if(/*(TIDY < Code_Block_Size_X) && */(TIDX == 0)) {
+//		coeff[TIDY + BORDER][0] = 0;
+//		coeff[TIDY + BORDER][info->width + BORDER] = 0;
+//	}
 
 	if(TID == 0) {
 		coeff[0][0] = 0;
@@ -505,6 +504,9 @@ __global__ void bpc_encoder(CodeBlockAdditionalInfo *infos, unsigned int *g_cxds
 		coeff[info->height + BORDER][info->width + BORDER] = 0;
 		blockVote = 0;
 	}
+	__syncthreads();
+
+	if((TIDX >= info->width) || (TIDY >= info->height)) return;
 	__syncthreads();
 
 	int cache_value = info->coefficients[TIDY * info->width + TIDX];
@@ -561,11 +563,11 @@ __global__ void bpc_encoder(CodeBlockAdditionalInfo *infos, unsigned int *g_cxds
 		unsigned char bitplane = leastSignificantBP + significantBits - i - 1;
 		//__syncthreads();
 		cxds[bacy][bacx] = 0;
-	        __syncthreads();
+		__syncthreads();
 		btiplanePreprocessing<Code_Block_Size_X>(coeff, &blockVote, bitplane);
 		__syncthreads();
-	        assert(cxds[bacy][bacx] == 0);
-        	__syncthreads();
+//	        assert(cxds[bacy][bacx] == 0);
+//        	__syncthreads();
 		// MRP
 		//if σold = 1
 		magnitudeRefinementCoding<Code_Block_Size_X>(coeff, cxds, bitplane);
