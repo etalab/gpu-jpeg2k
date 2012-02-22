@@ -604,6 +604,7 @@ __global__ void bpc_encoder(CodeBlockAdditionalInfo *infos, unsigned int *g_cxds
 void launch_bpc_encode(dim3 gridDim, dim3 blockDim, CodeBlockAdditionalInfo *infos, unsigned int *g_cxds, const int maxOutLength)
 {
 	printf("dim %d %d\n", blockDim.x, blockDim.y);
+//	cudaFuncSetCacheConfig(bpc_encoder<16>, cudaFuncCachePreferL1);
 	switch(blockDim.x) {
 	case 4: bpc_encoder<4><<<gridDim, blockDim>>>(infos, g_cxds, maxOutLength); break;
 	case 8: bpc_encoder<8><<<gridDim, blockDim>>>(infos, g_cxds, maxOutLength); break;
