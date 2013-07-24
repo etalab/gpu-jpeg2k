@@ -7,6 +7,7 @@
 #include <math.h>
 #include <time.h>
 #include "gs.h"
+#include <cublas.h>
 
 
 int gram_schmidt(int N, type_data* output, type_data *dinput, type_data *eValues, int J, type_data er) {
@@ -65,7 +66,7 @@ int gram_schmidt(int N, type_data* output, type_data *dinput, type_data *eValues
 //		iter = 0;
 		cublasSger(N, N, -eValues[k], &dT[k * N], 1, &doutput[k * N], 1, dinput, N);
 	}
-//	printf("iter %d\n", iter);
+	printf("iter %d\n", iter);
 	for (k = 0; k < N; k++) {
 		cublasSscal(N, eValues[k], &dT[k * N], 1);
 	}
