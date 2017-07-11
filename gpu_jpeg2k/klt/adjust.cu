@@ -18,8 +18,8 @@ You should have received a copy of the GNU Affero General Public License
 along with GPU JPEG2K. If not, see <http://www.gnu.org/licenses/>.
 */
 #include "adjust.h"
-extern "C" {
 #include <cublas.h>
+extern "C" {
 #include "../misc/memory_management.cuh"
 #include "../print_info/print_info.h"
 }
