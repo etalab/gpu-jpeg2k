@@ -90,7 +90,6 @@ void fwt(type_tile *tile)
 //#define TEST
 
 #ifdef TEST
-#include <malloc.h>
 typedef struct dwt_local {
 	int* mem;
 	int dn;
