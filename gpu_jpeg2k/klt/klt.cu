@@ -26,6 +26,7 @@ extern "C" {
 #include "analysis.h"
 #include "adjust.h"
 #include <time.h>
+#include "../my_common/my_common.h"
 #include "../misc/cuda_errors.h"
 #include "mct_transform.h"
 #include "mean_adjust_data.h"

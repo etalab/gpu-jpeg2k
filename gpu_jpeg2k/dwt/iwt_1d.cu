@@ -30,6 +30,7 @@ extern "C"
 #include "iwt_1d.h"
 #include "../print_info/print_info.h"
 #include "../misc/memory_management.cuh"
+#include "../my_common/my_common.h"
 #include "../misc/cuda_errors.h"
 }
 

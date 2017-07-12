@@ -411,6 +411,7 @@ Index: analysis.cu
 @@ -0,0 +1,36 @@
 +#include "analysis.h"
 +#include <stdlib.h>
+#include "../my_common/my_common.h"
 +
 +__device__ type_data calculate_mean(type_data* data, unsigned int count) {
 +	type_data sum = 0.0;

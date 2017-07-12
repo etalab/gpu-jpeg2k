@@ -19,6 +19,7 @@ along with GPU JPEG2K. If not, see <http://www.gnu.org/licenses/>.
 */
 #include "timer.h"
 #include <stdlib.h>
+#include "../..../my_common/my_common.h"
 
 void
 timer_reset(struct timer_state* timer)

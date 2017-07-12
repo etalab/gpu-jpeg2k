@@ -19,6 +19,7 @@ along with GPU JPEG2K. If not, see <http://www.gnu.org/licenses/>.
 */
 #include "analysis.h"
 #include <stdlib.h>
+#include "../my_common/my_common.h"
 
 __device__ type_data calculate_mean(type_data* data, unsigned int count) {
 	type_data sum = 0.0;

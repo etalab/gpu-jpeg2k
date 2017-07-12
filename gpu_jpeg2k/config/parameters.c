@@ -29,6 +29,7 @@ along with GPU JPEG2K. If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "../my_common/my_common.h"
 
 #include "parameters.h"
 #include "ini.h"

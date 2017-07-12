@@ -21,6 +21,7 @@ along with GPU JPEG2K. If not, see <http://www.gnu.org/licenses/>.
 #include "../print_info/print_info.h"
 
 #include <stdlib.h>
+#include "../my_common/my_common.h"
 
 //int write_byte(FILE *fd, unsigned char value) {
 //	fputc(value, fd);

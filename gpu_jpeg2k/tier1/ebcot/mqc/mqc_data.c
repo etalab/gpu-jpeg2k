@@ -1,6 +1,7 @@
 #include "mqc_data.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "../../../my_common/my_common.h"
 #include <string.h>
 #include "mqc_opj_helper.h"
 

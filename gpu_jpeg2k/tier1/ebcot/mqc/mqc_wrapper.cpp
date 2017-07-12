@@ -26,6 +26,7 @@ along with GPU JPEG2K. If not, see <http://www.gnu.org/licenses/>.
 
 #include <iostream>
 #include <stdlib.h>
+#include "../..../my_common/my_common.h"
 #include <string.h>
 #include "mqc_wrapper.h"
 #include "mqc_common.h"

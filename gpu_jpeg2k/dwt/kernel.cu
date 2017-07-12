@@ -27,6 +27,7 @@ along with GPU JPEG2K. If not, see <http://www.gnu.org/licenses/>.
 extern "C" {
 	#include "../print_info/print_info.h"
 	#include "../misc/memory_management.cuh"
+	#include "../my_common/my_common.h"
 	#include "kernel.h"
 	#include "fwt_new.h"
 	#include "fwt.h"

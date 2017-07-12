@@ -29,6 +29,7 @@ along with GPU JPEG2K. If not, see <http://www.gnu.org/licenses/>.
 #include "gpu_mq-coder.cuh"
 extern "C" {
 	#include "../../misc/memory_management.cuh"
+	#include "../../my_common/my_common.h"
 }
 
 namespace GPU_JPEG2K

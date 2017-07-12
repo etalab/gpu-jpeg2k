@@ -25,6 +25,7 @@ along with GPU JPEG2K. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <stdlib.h>
+#include "../my_common/my_common.h"
 #include <stdio.h>
 
 extern "C" {

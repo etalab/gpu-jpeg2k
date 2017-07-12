@@ -31,6 +31,7 @@ along with GPU JPEG2K. If not, see <http://www.gnu.org/licenses/>.
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include "../my_common/my_common.h"
 #include "../types/image_types.h"
 #include "../config/parameters.h"
 #include "image_hyper.h"

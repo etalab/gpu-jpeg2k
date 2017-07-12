@@ -1,5 +1,5 @@
-#ifndef MY_MALLOC_H
-#define MY_MALLOC_H
+#ifndef COMMON_H
+#define COMMON_H
 
 #include <stdlib.h>
 

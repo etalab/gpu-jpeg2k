@@ -1,6 +1,7 @@
 #include "mqc_opj_helper.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "../../../my_common/my_common.h"
 #include <string.h>
 #include "library/openjpeg/opj_convert.h"
 #include "library/openjpeg/opj_includes.h"

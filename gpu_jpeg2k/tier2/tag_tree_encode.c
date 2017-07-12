@@ -27,6 +27,7 @@ along with GPU JPEG2K. If not, see <http://www.gnu.org/licenses/>.
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "../my_common/my_common.h"
 #include <assert.h>
 #include "tag_tree_encode.h"
 #include "../print_info/print_info.h"

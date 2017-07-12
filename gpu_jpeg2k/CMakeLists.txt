@@ -14,6 +14,7 @@ SET(CUDA_VERBOSE_BUILD ON)
 
 include_directories(${FREEIMAGE_INCLUDE_PATH})
 
+add_subdirectory(my_common)
 add_subdirectory(tier1/coeff_coder)
 add_subdirectory(tier1/bpc)
 #add_subdirectory(tier1/ebcot)
@@ -32,11 +33,13 @@ add_subdirectory(klt)
 
 cuda_add_executable(encoder  
 print_info/print_info.c
+my_common/my_common.c
 encoder.c)
 
 TARGET_LINK_LIBRARIES( encoder 
 ${FREEIMAGE_LIBRARY} 
 m
+my_common
 gpu_coeff_coder 
 #ebcot
 config
@@ -57,6 +60,7 @@ TARGET_LINK_LIBRARIES( decoder
 ${FREEIMAGE_LIBRARY} 
 m 
 gpu_coeff_coder
+my_common
 config
 dwt
 preprocessing

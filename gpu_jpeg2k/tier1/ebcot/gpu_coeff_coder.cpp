@@ -37,6 +37,7 @@ extern "C" {
 
 #include <math.h>
 #include <stdlib.h>
+#include "../../my_common/my_common.h"
 #include <stdio.h>
 
 #include <list>

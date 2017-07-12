@@ -24,6 +24,7 @@ along with GPU JPEG2K. If not, see <http://www.gnu.org/licenses/>.
  *      Author: miloszc
  */
 #include <stdlib.h>
+#include "../my_common/my_common.h"
 #include <stdio.h>
 
 #include "write_codestream.h"
