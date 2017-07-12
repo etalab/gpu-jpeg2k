@@ -189,12 +189,13 @@ int dispose_of(box *b) {
 int h_filetype_box(box *b, type_image *img) {
 	char *br = malloc(5 * sizeof(char));
 	br = strncpy(br, b->dbox, 4);
+	br[4] = 0;
 
 	if(strcmp(br, "jp2\040")) {
-		println(INFO, "DOSEN'T Conform to IS 15444-1. Exitting");
+		println(INFO, "DOESN'T Conform to ISO 15444-1. Exiting");
 		return 1;
 	} else
-		println(INFO, "Conforms to IS 15444-1");
+		println(INFO, "Conforms to ISO 15444-1");
 
 	char *minv = malloc(5 * sizeof(char));
 	minv = strncpy(minv, &(b->dbox[4]), 4);
