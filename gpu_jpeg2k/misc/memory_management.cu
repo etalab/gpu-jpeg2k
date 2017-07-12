@@ -96,7 +96,7 @@ void cuda_h_allocate_mem(void **data, uint64_t mem_size)
  */
 void cuda_d_allocate_mem(void **data, uint64_t mem_size)
 {
-//	println_var(INFO, "mem_size: %d", mem_size);
+	println_var(INFO, "mem_size: %u", mem_size);
 	cudaMalloc(data, mem_size);
 	checkCUDAError("cuda_d_allocate_mem");
 }

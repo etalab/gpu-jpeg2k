@@ -206,6 +206,8 @@ void read_cod_marker(type_buffer *buffer, type_image *img)
 	type_parameters *param = (type_parameters *)malloc(sizeof(type_parameters));
 	int marker;
 
+	println_start(INFO);
+
 	/* Read COD marker */
 	marker = read_buffer(buffer, 2);
 
@@ -240,6 +242,8 @@ void read_cod_marker(type_buffer *buffer, type_image *img)
 
 	init_tiles(&img, param);
 	/* TODO: In future read precinct partition */
+
+	println_end(INFO);
 }
 
 /**
@@ -431,6 +435,8 @@ void read_main_header(type_buffer *buffer, type_image *img)
 {
 	uint32_t marker;
 
+	println_start(INFO);
+
 	/* Read SOC marker */
 	marker = read_buffer(buffer, 2);
 
@@ -439,19 +445,27 @@ void read_main_header(type_buffer *buffer, type_image *img)
 		println_var(INFO, "Error: Expected SOC(%x) marker instead of %x", SOC, marker);
 	}
 
-	/* Read SIZ marker */
+	println(INFO, "reading SIZ marker ");
 	read_siz_marker(buffer, img);
-	/* Read COD marker */
+
+	println(INFO, "reading COD marker ");
 	read_cod_marker(buffer, img);
-	/* Read COC marker */
+
+	println(INFO, "reading COC marker");
 	read_coc_marker(buffer, img);
-	/* Read QCD marker */
+
+	println(INFO, "reading QCD marker");
 	read_qcd_marker(buffer, img);
+
 	/* Read QCC marker. XXX: Currently we ignore QCC marker */
+
 	/* Read POC and COM markers. XXX:Ignore */
+
 	if(img->use_part2_mct) {
 		read_multiple_component_transformations(buffer, img);
 	}
+
+	println_end(INFO);
 }
 
 /**
@@ -1076,6 +1090,8 @@ void decode_codestream(type_buffer *buffer, type_image *img)
 	uint32_t marker;
 	int i;
 
+	println_start(INFO);
+
 	read_main_header(buffer, img);
 
 	for (i = 0; i < img->num_tiles; i++) {
@@ -1090,4 +1106,6 @@ void decode_codestream(type_buffer *buffer, type_image *img)
 	{
 		println_var(INFO, "Error: Expected EOC(%x) marker instead of %x", EOC, marker);
 	}
+
+	println_end(INFO);
 }

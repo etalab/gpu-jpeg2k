@@ -259,12 +259,16 @@ void init_tile_comps(type_tile *tile, type_parameters *param) {
 	type_tile_comp *tile_comp;
 	type_image *parent_img;
 
+	println_start(INFO);
+
 	parent_img = tile->parent_img;
 	tile->tile_comp = (type_tile_comp *) malloc(parent_img->num_components * sizeof(type_tile_comp));
 
 	//	println_var(INFO, "no:%d tlx:%d tly:%d brx:%d bry:%d w:%d h:%d", tile->tile_no, tile->tlx, tile->tly, tile->brx, tile->bry, tile->width, tile->height);
 
 	for (i = 0; i < parent_img->num_components; i++) {
+		uint64_t size_to_allocate;
+
 		//		println_var(INFO, "%d\n", i);
 		tile_comp = &(tile->tile_comp[i]);
 
@@ -286,13 +290,17 @@ void init_tile_comps(type_tile *tile, type_parameters *param) {
 		//printf("tile w:%d h:%d\n", tile_comp->width, tile_comp->height);
 		tile_comp->parent_tile = tile;
 
-		cuda_h_allocate_mem((void **) &(tile_comp->img_data), tile_comp->width * tile_comp->height * sizeof(type_data));
+		size_to_allocate = tile_comp->width * tile_comp->height * sizeof(type_data);
+		println_var(INFO, "Allocating %u bytes on both host and device (%u x %u x %u)", size_to_allocate, tile_comp->width, tile_comp->height, sizeof(type_data));
+
+		cuda_h_allocate_mem((void **) &(tile_comp->img_data), size_to_allocate);
 		//		tile_comp->img_data = (type_data *) malloc(tile_comp->width * tile_comp->height * sizeof(type_data));
-		cuda_d_allocate_mem((void **) &(tile_comp->img_data_d),
-				tile_comp->width * tile_comp->height * sizeof(type_data));
+		cuda_d_allocate_mem((void **) &(tile_comp->img_data_d), size_to_allocate);
 
 		init_resolution_lvls(tile_comp);
 	}
+
+	println_end(INFO);
 }
 
 /**
@@ -312,6 +320,8 @@ void init_tiles(type_image **_img, type_parameters *param) {
 	/* Temporary pointers */
 	type_tile *tile;
 
+	println_start(INFO);
+
 	/* Checks if tile width and height are <= image width and height */
 	img->tile_h = (param->param_tile_h == -1U ? img->height : (param->param_tile_h <= img->height ?param->param_tile_h : img->height) ); ///Nominal tile height.
 	img->tile_w = (param->param_tile_w == -1U ? img->width : (param->param_tile_w <= img->width ? param->param_tile_w : img->width)); ///Nominal tile width.
@@ -324,7 +334,7 @@ void init_tiles(type_image **_img, type_parameters *param) {
 	//	cuda_h_allocate_mem((void **) &(img->tile), img->num_tiles * sizeof(type_tile));
 	img->tile = (type_tile *) malloc(img->num_tiles * sizeof(type_tile));
 
-	//	println_var(INFO, "w:%d h:%d no_com:%d area:%d t_w:%d t_h:%d t_x:%d t_y:%d no_t:%d", img->width,img->height,img->num_components,img->area_alloc,img->tile_w,img->tile_h,img->num_xtiles,img->num_ytiles,img->num_tiles);
+	println_var(INFO, "w:%d h:%d no_com:%d area:%d t_w:%d t_h:%d t_x:%d t_y:%d no_t:%d", img->width,img->height,img->num_components,img->area_alloc,img->tile_w,img->tile_h,img->num_xtiles,img->num_ytiles,img->num_tiles);
 
 	for (i = 0; i < img->num_tiles; i++) {
 		tile = &(img->tile[i]);
@@ -346,7 +356,8 @@ void init_tiles(type_image **_img, type_parameters *param) {
 
 		init_tile_comps(tile, param);
 	}
-	//	println_end(INFO);
+
+	println_end(INFO);
 }
 
 /**
