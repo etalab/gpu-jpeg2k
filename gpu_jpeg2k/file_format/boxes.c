@@ -25,6 +25,7 @@ along with GPU JPEG2K. If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "boxes.h"
 #include "../print_info/print_info.h"
@@ -101,9 +102,6 @@ box *get_next_box(FILE *fd) {
 		return NULL;
 
 	box->length = hex_to_long(box->lbox, 4);
-	if(box->length == 0) {
-		return NULL;
-	}
 
 	if( (box->tbox = read_bytes(box->tbox, fd, 4)) == NULL) {
 		println(INFO, "Corrupted JP2 file. Exitting.");
@@ -116,6 +114,17 @@ box *get_next_box(FILE *fd) {
 		box->xlbox = read_bytes(box->xlbox, fd, 8);
 		box->length = hex_to_long(box->xlbox, 8);
 		read += 8;
+	} else if (box->length == 0) { //this box ends the file
+		struct stat file_stats;
+		long int offset;
+		int file_descriptor;
+		off_t file_size;
+
+		offset = ftell(fd);
+		file_descriptor = fileno(fd);
+		fstat(file_descriptor, &file_stats);
+		file_size = file_stats.st_size;
+		box->length = file_size - offset + read;
 	}
 	box->content_length = box->length - read;
 
