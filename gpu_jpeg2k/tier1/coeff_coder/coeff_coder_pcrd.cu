@@ -276,7 +276,7 @@ void launch_encode_pcrd(dim3 gridDim, dim3 blockDim, CoefficientState *coeffBuff
 
 	//TODO debug
 	PcrdCodeblockInfo *pcrdCodeblockInfos_h;
-	pcrdCodeblockInfos_h = (PcrdCodeblockInfo *) malloc(sizeof(PcrdCodeblockInfo) * codeBlocks);
+	pcrdCodeblockInfos_h = (PcrdCodeblockInfo *) my_malloc(sizeof(PcrdCodeblockInfo) * codeBlocks);
 	cuda_memcpy_dth(pcrdCodeblockInfos, pcrdCodeblockInfos_h, sizeof(PcrdCodeblockInfo) * codeBlocks);
 
 	/*for(int i = 0; i < codeBlocks; ++i)

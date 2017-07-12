@@ -73,7 +73,7 @@ along with GPU JPEG2K. If not, see <http://www.gnu.org/licenses/>.
 //
 //unsigned char *read_4bytes(unsigned char *mem, long int *pos) {
 //unsigned char *read_4bytes(unsigned char *mem, long int *pos) {811388
-//	unsigned char *ret = malloc(4 * sizeof(unsigned char));
+//	unsigned char *ret = my_malloc(4 * sizeof(unsigned char));
 //
 //	printf("pos: %li\n", *pos);
 //	ret[0] = mem[*pos];

@@ -39,14 +39,14 @@ void dbg_fiwt_1d()
 
 	cuda_set_printf_limit(printf_buff);
 
-	type_image *img = (type_image *) malloc(sizeof(type_image));
+	type_image *img = (type_image *) my_malloc(sizeof(type_image));
 
 	img->num_components = NUM_COMP;
 	img->width = 1;
 	img->height = 1;
 
-	type_tile *tile = (type_tile *) malloc(sizeof(type_tile));
-	type_tile_comp *tile_comp = (type_tile_comp *) malloc(sizeof(type_tile_comp) * img->num_components);
+	type_tile *tile = (type_tile *) my_malloc(sizeof(type_tile));
+	type_tile_comp *tile_comp = (type_tile_comp *) my_malloc(sizeof(type_tile_comp) * img->num_components);
 
 //	float input[NUM_COMP] = {3, 44, 6, 7, 8, 9, 4, 45, 7, 8, 9};
 	float input[NUM_COMP] = { 726.000000, 905.000000, 951.000000, 1040.000000, 1095.000000, 1138.000000, 1161.000000,
@@ -105,10 +105,10 @@ void dbg_fiwt_1d()
 
 	fwt_1d(img, LEVEL);
 
-	type_data **output = (type_data **) malloc(img->num_components * sizeof(type_data *));
+	type_data **output = (type_data **) my_malloc(img->num_components * sizeof(type_data *));
 
 	for (i = 0; i < img->num_components; ++i) {
-		output[i] = (type_data *) malloc(img->width * img->height * sizeof(type_data));
+		output[i] = (type_data *) my_malloc(img->width * img->height * sizeof(type_data));
 
 		cuda_memcpy_dth(tile_comp[i].img_data_d, output[i], img->width * img->height * sizeof(type_data));
 	}

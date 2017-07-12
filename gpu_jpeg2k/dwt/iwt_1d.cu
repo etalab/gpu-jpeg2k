@@ -197,7 +197,7 @@ void iwt_1d(type_image *img, int lvl)
 	printf("w:%d h:%d num_comp:%d\n", tile_comp->width, tile_comp->height, img->num_components);
 
 	int n = img->num_components;
-	int *parity = (int *)malloc(lvl * sizeof(int));
+	int *parity = (int *)my_malloc(lvl * sizeof(int));
 	memset(parity, 0, lvl * sizeof(int));
 	int i;
 	for(i = 0; i < lvl - 1; ++i)

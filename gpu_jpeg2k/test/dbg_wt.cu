@@ -2980,7 +2980,7 @@ float out_h_data53[] = {-67, -64, -64, -64, -62, -61, -58, -51, -81, -94, -93, -
 
 void dbg_wt()
 {
-	type_tile_comp *tile_comp = (type_tile_comp*) malloc(sizeof(type_tile_comp));
+	type_tile_comp *tile_comp = (type_tile_comp*) my_malloc(sizeof(type_tile_comp));
 	tile_comp->width = 128;
 	tile_comp->height = 128;
 	tile_comp->num_dlvls = 1;
@@ -2999,7 +2999,7 @@ void dbg_wt()
 		tile_comp->img_data_d = fwt_2d(1, tile_comp);
 	}
 
-	type_data *out_h_wt_data = (type_data*) malloc(tile_comp->width * tile_comp->height * sizeof(type_data));
+	type_data *out_h_wt_data = (type_data*) my_malloc(tile_comp->width * tile_comp->height * sizeof(type_data));
 	cuda_memcpy_dth(tile_comp->img_data_d, out_h_wt_data, tile_comp->width * tile_comp->height * sizeof(type_data));
 
 	int i, j;

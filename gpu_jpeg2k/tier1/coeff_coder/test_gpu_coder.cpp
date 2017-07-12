@@ -53,7 +53,7 @@ void encode_tile() {
 
 	cudaMemcpyFromSymbol((void *) &l, "l", sizeof(int), 0, cudaMemcpyDeviceToHost);
 
-	int *buff = (int *) malloc(sizeof(int) * l);
+	int *buff = (int *) my_malloc(sizeof(int) * l);
 
 	cudaMemcpyFromSymbol((void *) buff, "Cstates", sizeof(int) * l, 0, cudaMemcpyDeviceToHost);
 
@@ -87,7 +87,7 @@ void encode_tile_dbg(type_tile *tile)
 	type_coding_param *coding_params = tile->parent_img->coding_param;
 
 	int size = 64*64*sizeof(int);
-	int *buff = (int*)malloc(size);
+	int *buff = (int*)my_malloc(size);
 	int x = 0, y = 0;
 	type_codeblock *cblk_;
 
@@ -122,7 +122,7 @@ void encode_tile_dbg(type_tile *tile)
 		printf("\n");
 	}
 
-	EntropyCodingTaskInfo *tasks = (EntropyCodingTaskInfo *) malloc(sizeof(EntropyCodingTaskInfo) * cblks.size());
+	EntropyCodingTaskInfo *tasks = (EntropyCodingTaskInfo *) my_malloc(sizeof(EntropyCodingTaskInfo) * cblks.size());
 
 	std::list<type_codeblock *>::iterator ii = cblks.begin();
 
@@ -176,7 +176,7 @@ void decode_tile() {
 
 	cudaMemcpyFromSymbol((void *) &l, "l", sizeof(int), 0, cudaMemcpyDeviceToHost);
 
-	unsigned int *buff = (unsigned int *) malloc(sizeof(int) * l);
+	unsigned int *buff = (unsigned int *) my_malloc(sizeof(int) * l);
 
 	cudaMemcpyFromSymbol((void *) buff, "Cstates", sizeof(int) * l, 0, cudaMemcpyDeviceToHost);
 
@@ -269,7 +269,7 @@ void decode_tile() {
 
 //	printf("%d\n", l);
 
-	int *m = (int *) malloc(sizeof(int) * l);
+	int *m = (int *) my_malloc(sizeof(int) * l);
 
 	CHECK_ERRORS(cudaMemcpyFromSymbol((void *) m, "Cstates", sizeof(int) * l, 0, cudaMemcpyDeviceToHost));
 
@@ -457,7 +457,7 @@ void perform_test(const char *test_file)
 	int l = 0;
 	CHECK_ERRORS(cudaMemcpyFromSymbol((void *) &l, "l", sizeof(int), 0, cudaMemcpyDeviceToHost));
 
-	int *m = (int *) malloc(sizeof(int) * l);
+	int *m = (int *) my_malloc(sizeof(int) * l);
 
 	CHECK_ERRORS(cudaMemcpyFromSymbol((void *) m, "Cstates", sizeof(int) * l, 0, cudaMemcpyDeviceToHost));
 

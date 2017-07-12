@@ -263,7 +263,7 @@ void quantize_tile(type_tile *tile)
 
 	int x = 0, y = 0;
 	int size = tile->width * tile->height * sizeof(type_data);
-	type_data *buff = (type_data*)malloc(size);
+	type_data *buff = (type_data*)my_malloc(size);
 
 	for(i = 0; i < img->num_components; i++)
 	{
@@ -380,7 +380,7 @@ void quantize_tile(type_tile *tile)
 //	checkCUDAError("quantization");
 //
 //	int size = tile_comp->cblk_w * tile_comp->cblk_h * sizeof(int);
-//	int *buff = (int*)malloc(size);
+//	int *buff = (int*)my_malloc(size);
 //	int x = 0, y = 0;
 //
 //	/* Update code blocks pointer to data */
@@ -410,7 +410,7 @@ void quantize_tile(type_tile *tile)
 
 /*void quantization_dbg(type_data *idata, int size, int w, int h)
 {
-	type_data *buff = (type_data*)malloc(size);
+	type_data *buff = (type_data*)my_malloc(size);
 	int x = 0, y = 0;
 
 	cuda_memcpy_dth(idata, buff, size);

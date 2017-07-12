@@ -43,7 +43,7 @@ int main(int argc, char **argv)
 	println_start(INFO);
 
 	int i;
-	type_parameters *param = (type_parameters*)malloc(sizeof(type_parameters));
+	type_parameters *param = (type_parameters*)my_malloc(sizeof(type_parameters));
 	type_tile *tile;
 
 	if (argc < 2)
@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 
 	println_var(INFO, "%s %s", argv[0], argv[1]);
 
-	type_image *img = (type_image *)malloc(sizeof(type_image));
+	type_image *img = (type_image *)my_malloc(sizeof(type_image));
 
 	FILE *fsrc = fopen(argv[1], "rb");
 	if (!fsrc) {

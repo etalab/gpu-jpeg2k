@@ -219,8 +219,8 @@ type_subband *dequantization(type_subband *sb)
 	type_data *h_sb_o;
 	int *h_sb_i;
 
-	h_sb_i = (int *) malloc(sb->width * sb->height * sizeof(int));
-	h_sb_o = (type_data *) malloc(sb->width * sb->height * sizeof(type_data));
+	h_sb_i = (int *) my_malloc(sb->width * sb->height * sizeof(int));
+	h_sb_o = (type_data *) my_malloc(sb->width * sb->height * sizeof(type_data));
 
 	cuda_memcpy2d_dth(idata, sb->width * sizeof(int), h_sb_i, sb->width * sizeof(int), sb->width * sizeof(int), sb->height);
 	cuda_memcpy2d_dth(odata, tile_comp->width * sizeof(type_data), h_sb_o, sb->width * sizeof(type_data), sb->width * sizeof(type_data), sb->height);

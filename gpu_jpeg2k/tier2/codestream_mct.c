@@ -101,7 +101,7 @@ void read_mct_marker(type_buffer *buffer, type_image *img) {
 		mct->type = type;
 		mct->element_type = (Smct&(3<<6))>>6;
 		mct->length = length/(1<<mct->element_type);
-		mct->data = (uint8_t*)malloc(length);
+		mct->data = (uint8_t*)my_malloc(length);
 		for(i=0; i<length; ++i) {
 			mct->data[i] = read_byte(buffer);
 		}

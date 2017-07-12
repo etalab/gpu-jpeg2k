@@ -88,7 +88,7 @@ void init_codeblocks(type_subband *sb) {
 	type_codeblock *cblk;
 	type_tile_comp *tile_comp;
 
-	sb->cblks = (type_codeblock *) malloc(sb->num_cblks * sizeof(type_codeblock));
+	sb->cblks = (type_codeblock *) my_malloc(sb->num_cblks * sizeof(type_codeblock));
 
 	tile_comp = sb->parent_res_lvl->parent_tile_comp;
 
@@ -135,7 +135,7 @@ void init_subbands(type_res_lvl *res_lvl) {
 	uint16_t tmp_x, tmp_y;
 	uint16_t sb_ll_width, sb_ll_height;
 
-	res_lvl->subbands = (type_subband *) malloc(res_lvl->num_subbands * sizeof(type_subband));
+	res_lvl->subbands = (type_subband *) my_malloc(res_lvl->num_subbands * sizeof(type_subband));
 
 	tile_comp = res_lvl->parent_tile_comp;
 	tile = tile_comp->parent_tile;
@@ -201,7 +201,7 @@ void init_resolution_lvls(type_tile_comp *tile_comp) {
 	uint16_t n;
 	/* Precinct width and height */
 	int prec_width, prec_height;
-	tile_comp->res_lvls = (type_res_lvl *) malloc(tile_comp->num_rlvls * sizeof(type_res_lvl));
+	tile_comp->res_lvls = (type_res_lvl *) my_malloc(tile_comp->num_rlvls * sizeof(type_res_lvl));
 
 	parent_tile = tile_comp->parent_tile;
 
@@ -262,7 +262,7 @@ void init_tile_comps(type_tile *tile, type_parameters *param) {
 	println_start(INFO);
 
 	parent_img = tile->parent_img;
-	tile->tile_comp = (type_tile_comp *) malloc(parent_img->num_components * sizeof(type_tile_comp));
+	tile->tile_comp = (type_tile_comp *) my_malloc(parent_img->num_components * sizeof(type_tile_comp));
 
 	//	println_var(INFO, "no:%d tlx:%d tly:%d brx:%d bry:%d w:%d h:%d", tile->tile_no, tile->tlx, tile->tly, tile->brx, tile->bry, tile->width, tile->height);
 
@@ -294,7 +294,7 @@ void init_tile_comps(type_tile *tile, type_parameters *param) {
 		println_var(INFO, "Allocating %u bytes on both host and device (%u x %u x %u)", size_to_allocate, tile_comp->width, tile_comp->height, sizeof(type_data));
 
 		cuda_h_allocate_mem((void **) &(tile_comp->img_data), size_to_allocate);
-		//		tile_comp->img_data = (type_data *) malloc(tile_comp->width * tile_comp->height * sizeof(type_data));
+		//		tile_comp->img_data = (type_data *) my_malloc(tile_comp->width * tile_comp->height * sizeof(type_data));
 		cuda_d_allocate_mem((void **) &(tile_comp->img_data_d), size_to_allocate);
 
 		init_resolution_lvls(tile_comp);
@@ -332,7 +332,7 @@ void init_tiles(type_image **_img, type_parameters *param) {
 	img->num_tiles = img->num_xtiles * img->num_ytiles;
 
 	//	cuda_h_allocate_mem((void **) &(img->tile), img->num_tiles * sizeof(type_tile));
-	img->tile = (type_tile *) malloc(img->num_tiles * sizeof(type_tile));
+	img->tile = (type_tile *) my_malloc(img->num_tiles * sizeof(type_tile));
 
 	println_var(INFO, "w:%d h:%d no_com:%d area:%d t_w:%d t_h:%d t_x:%d t_y:%d no_t:%d", img->width,img->height,img->num_components,img->area_alloc,img->tile_w,img->tile_h,img->num_xtiles,img->num_ytiles,img->num_tiles);
 
@@ -366,7 +366,7 @@ void init_tiles(type_image **_img, type_parameters *param) {
  * @param img
  */
 void set_coding_parameters(type_image *img, type_parameters *param) {
-	img->coding_param = (type_coding_param *) malloc(sizeof(type_coding_param));
+	img->coding_param = (type_coding_param *) my_malloc(sizeof(type_coding_param));
 	img->coding_param->imgarea_tlx = 0;
 	img->coding_param->imgarea_tly = 0;
 	img->coding_param->imgarea_width = img->width;
@@ -399,7 +399,7 @@ static void init_params(type_image *img, type_parameters *param) {
  * @brief Read image from file.
  *
  * @param path Path to image file.
- * @param _container Pointer to a malloc'ed memory for type_image.
+ * @param _container Pointer to a my_malloc'ed memory for type_image.
  */
 int read_image(type_image *img, type_parameters *param)
 {

@@ -61,7 +61,7 @@ along with GPU JPEG2K. If not, see <http://www.gnu.org/licenses/>.
 int main(int argc, char **argv)
 {
 //	println_start(INFO);
-	type_image *img = (type_image *)malloc(sizeof(type_image));
+	type_image *img = (type_image *)my_malloc(sizeof(type_image));
 	memset(img, 0, sizeof(type_image));
 	if((parse_args(argc, argv, img) == ERROR) || (check_args_dec(img) == ERROR))
 	{
@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	type_parameters *param = (type_parameters*)malloc(sizeof(type_parameters));
+	type_parameters *param = (type_parameters*)my_malloc(sizeof(type_parameters));
 	if((parse_config(img->conf_file, param) == ERROR) || (check_config(param) == ERROR)) {
 		fprintf(stderr, "Error occurred while parsing configuration file.\n");
 		fprintf(stdout, "%s", help);
@@ -125,7 +125,7 @@ int main(int argc, char **argv)
 		}
 	}
 	else {//It is not a JP2 file.
-		type_buffer *src_buff = (type_buffer *) malloc(sizeof(type_buffer));
+		type_buffer *src_buff = (type_buffer *) my_malloc(sizeof(type_buffer));
 
 		init_dec_buffer(fsrc, src_buff);
 		fclose(fsrc);

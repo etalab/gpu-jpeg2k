@@ -864,7 +864,7 @@ void dbg_quantization()
 
 	int compression_type = 0;
 
-	img = (type_image *)malloc(sizeof(type_image));
+	img = (type_image *)my_malloc(sizeof(type_image));
 
 	if(compression_type == 0)
 	{
@@ -872,7 +872,7 @@ void dbg_quantization()
 		s_w = 64, s_h = 64;
 		cblk_w = 64, cblk_h = 64;
 
-		in_hdata = (float *)malloc(w * h * sizeof(float));
+		in_hdata = (float *)my_malloc(w * h * sizeof(float));
 
 		for (j = 0; j < h; j++) {
 			for (i = 0; i < w; i++) {
@@ -893,7 +893,7 @@ void dbg_quantization()
 		s_w = 32, s_h = 64;
 		cblk_w = 16, cblk_h = 16;
 
-		in_hdata = (float *)malloc(w * h * sizeof(float));
+		in_hdata = (float *)my_malloc(w * h * sizeof(float));
 
 		for (j = 0; j < h; j++) {
 			for (i = 0; i < w; i++) {

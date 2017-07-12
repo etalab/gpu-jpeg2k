@@ -100,7 +100,7 @@ void read_siz_marker(type_buffer *buffer, type_image *img)
 	}
 
 	/* Allocate coding parameters */
-	img->coding_param = (type_coding_param *) malloc(sizeof(type_coding_param));
+	img->coding_param = (type_coding_param *) my_malloc(sizeof(type_coding_param));
 
 	/* Lsiz */
 	length = read_buffer(buffer, 2);
@@ -203,7 +203,7 @@ void write_cod_marker(type_buffer *buffer, type_image *img)
 void read_cod_marker(type_buffer *buffer, type_image *img)
 {
 	int length, pos, i;
-	type_parameters *param = (type_parameters *)malloc(sizeof(type_parameters));
+	type_parameters *param = (type_parameters *)my_malloc(sizeof(type_parameters));
 	int marker;
 
 	println_start(INFO);
@@ -555,13 +555,13 @@ type_packet *prepare_packet(type_subband *sb)
 	type_packet *packet;
 	type_codeblock *cblk;
 
-	packet = (type_packet *) malloc(sizeof(type_packet));
+	packet = (type_packet *) my_malloc(sizeof(type_packet));
 
-	packet->inclusion = (uint16_t *) malloc(sizeof(uint16_t) * sb->num_cblks);
+	packet->inclusion = (uint16_t *) my_malloc(sizeof(uint16_t) * sb->num_cblks);
 	/* We use only one layer, so every code-block includes image data to first packet */
 	memset(packet->inclusion, 0, sizeof(uint16_t) * sb->num_cblks);
-	packet->zero_bit_plane = (uint16_t *) malloc(sizeof(uint16_t) * sb->num_cblks);
-	packet->num_coding_passes = (uint16_t *) malloc(sizeof(uint16_t) * sb->num_cblks);
+	packet->zero_bit_plane = (uint16_t *) my_malloc(sizeof(uint16_t) * sb->num_cblks);
+	packet->num_coding_passes = (uint16_t *) my_malloc(sizeof(uint16_t) * sb->num_cblks);
 
 	for (i = 0; i < sb->num_cblks; i++) {
 		cblk = &(sb->cblks[i]);

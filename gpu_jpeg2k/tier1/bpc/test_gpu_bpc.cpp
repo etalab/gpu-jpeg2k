@@ -68,7 +68,7 @@ int save_img_grayscale(struct mqc_data_cblk *cblk, char *filename)
 {
 	int x, y;
 
-	BYTE *bits = (BYTE*) malloc(cblk->h *cblk->w * sizeof(BYTE));
+	BYTE *bits = (BYTE*) my_malloc(cblk->h *cblk->w * sizeof(BYTE));
 
 	//	printf("for\n");
 	//exact opposite procedure as in read_img()
@@ -138,7 +138,7 @@ void check(unsigned int *d_cxd_pairs, CodeBlockAdditionalInfo *h_infos, int w, i
 //	int bitplanes = h_infos;
 //	int pairs_to_copy = bitplanes * w * h;
 
-	codeblock *codeblocks_ = (codeblock *) malloc(sizeof(codeblock) * codeBlocks);
+	codeblock *codeblocks_ = (codeblock *) my_malloc(sizeof(codeblock) * codeBlocks);
 	int cblk_size = CBLK_X * CBLK_Y;
 
 	int pairs_count = 0;
@@ -149,10 +149,10 @@ void check(unsigned int *d_cxd_pairs, CodeBlockAdditionalInfo *h_infos, int w, i
 			pairs_count += h_cxd_pairs[i * maxOutLength + j] & CXD_COUNTER;
 		}
 		codeblocks_[i].size = pairs_count;
-		codeblocks_[i].cxd_pairs = (cxd_pair *) malloc(sizeof(cxd_pair) * codeblocks_[i].size);
+		codeblocks_[i].cxd_pairs = (cxd_pair *) my_malloc(sizeof(cxd_pair) * codeblocks_[i].size);
 	}
 
-//	cxd_pair *cxd_pairs = (cxd_pair *) malloc(sizeof(cxd_pair) * pairs_count);
+//	cxd_pair *cxd_pairs = (cxd_pair *) my_malloc(sizeof(cxd_pair) * pairs_count);
 
 	int curr_pair = 0;
 	for (int i = 0; i < codeBlocks; ++i) {
@@ -239,12 +239,12 @@ void check_order(unsigned char *d_order_cxd_pairs, CodeBlockAdditionalInfo *info
 	cuda_memcpy_dth(d_order_cxd_pairs, h_order_cxd_pairs, sizeof(unsigned char) * codeBlocks * byteMaxOutLength);
 	cuda_d_free(d_order_cxd_pairs);
 
-	codeblock *codeblocks_ = (codeblock *) malloc(sizeof(codeblock) * codeBlocks);
+	codeblock *codeblocks_ = (codeblock *) my_malloc(sizeof(codeblock) * codeBlocks);
 	int cblk_size = CBLK_X * CBLK_Y;
 
 	for (int i = 0; i < codeBlocks; ++i) {
 		codeblocks_[i].size = infos[i].magconOffset;
-		codeblocks_[i].cxd_pairs = (cxd_pair *) malloc(sizeof(cxd_pair) * codeblocks_[i].size);
+		codeblocks_[i].cxd_pairs = (cxd_pair *) my_malloc(sizeof(cxd_pair) * codeblocks_[i].size);
 	}
 
 	int curr_pair = 0;
@@ -308,7 +308,7 @@ void encode_bpc_test(const char *file_name) {
 	unsigned int *d_cxd_pairs;
 //	GPU_JPEG2K::CoefficientState *d_stBuffors;
 
-	CodeBlockAdditionalInfo *h_infos = (CodeBlockAdditionalInfo *) malloc(sizeof(CodeBlockAdditionalInfo) * codeBlocks);
+	CodeBlockAdditionalInfo *h_infos = (CodeBlockAdditionalInfo *) my_malloc(sizeof(CodeBlockAdditionalInfo) * codeBlocks);
 	CodeBlockAdditionalInfo *d_infos;
 
 	cuda_d_allocate_mem((void **) &d_cxd_pairs, sizeof(unsigned int) * codeBlocks * maxOutLength);

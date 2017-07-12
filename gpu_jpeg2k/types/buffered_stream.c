@@ -38,7 +38,7 @@ along with GPU JPEG2K. If not, see <http://www.gnu.org/licenses/>.
 void init_buffer(type_buffer *buffer)
 {
 //	println_start(INFO);
-	buffer->data = (uint8_t*) malloc(INIT_BUF_SIZE);
+	buffer->data = (uint8_t*) my_malloc(INIT_BUF_SIZE);
 	buffer->byte = 0;
 	buffer->bytes_count = 0;
 	buffer->bits_count = 0;
@@ -162,7 +162,7 @@ void enlarge_buffer_n(type_buffer *buffer, int size)
 	uint8_t *old_data = buffer->data;
 	/* Enlarge buffer to new_size */
 	uint32_t new_size = size;
-	buffer->data = (uint8_t*)malloc(new_size);
+	buffer->data = (uint8_t*)my_malloc(new_size);
 	memcpy(buffer->data, old_data, buffer->size);
 	buffer->size = new_size;
 	free(old_data);

@@ -66,7 +66,7 @@ void fwt(type_tile *tile)
 		/*if(i == 0)
 		{
 			int size = tile->width * tile->height * sizeof(type_data);
-			type_data *buff = (type_data*)malloc(size);
+			type_data *buff = (type_data*)my_malloc(size);
 
 			cuda_memcpy_dth(tile_comp->img_data_d, buff, size);
 
@@ -191,8 +191,8 @@ static void dwt_decode_tile(type_tile_comp *tile_comp, int *idata) {
 
 	printf("%d\n", numres);
 
-	sub_x = (int *)malloc((tile_comp->num_dlvls - 1) * sizeof(int));
-	sub_y = (int *)malloc((tile_comp->num_dlvls - 1) * sizeof(int));
+	sub_x = (int *)my_malloc((tile_comp->num_dlvls - 1) * sizeof(int));
+	sub_y = (int *)my_malloc((tile_comp->num_dlvls - 1) * sizeof(int));
 
 	for(i = 0; i < tile_comp->num_dlvls - 1; i++) {
 		sub_x[i] = (image_size_x % 2 == 1) ? 1 : 0;
@@ -272,8 +272,8 @@ void iwt(type_tile *tile)
 			int *h_idata;
 			type_data *h_fdata;
 
-			h_idata = (int *)malloc(tile_comp->width * tile_comp->height * sizeof(int));
-			h_fdata = (type_data *)malloc(tile_comp->width * tile_comp->height * sizeof(type_data));
+			h_idata = (int *)my_malloc(tile_comp->width * tile_comp->height * sizeof(int));
+			h_fdata = (type_data *)my_malloc(tile_comp->width * tile_comp->height * sizeof(type_data));
 
 			cuda_memcpy_dth(tile_comp->img_data_d, h_fdata, tile_comp->width * tile_comp->height * sizeof(type_data));
 
@@ -323,7 +323,7 @@ void print_tile_comp(type_tile_comp *tile_comp)
 	int i, j;
 	float *odata;
 	int size = tile_comp->width * tile_comp->height * sizeof(float);
-	odata = (float *) malloc(size);
+	odata = (float *) my_malloc(size);
 	cuda_memcpy_dth(tile_comp->img_data_d, odata, size);
 
 	for(j = 0; j < tile_comp->height; j++)
@@ -346,7 +346,7 @@ void fwt_dbg(type_tile *tile)
 
 	int x = 0, y = 0;
 	int size = tile->width * tile->height * sizeof(type_data);
-	type_data *buff = (type_data*)malloc(size);
+	type_data *buff = (type_data*)my_malloc(size);
 
 //	show_image(tile);
 	/* Process components from tile */

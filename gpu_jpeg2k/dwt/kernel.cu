@@ -131,8 +131,8 @@ type_data *iwt_2d(short filter, type_tile_comp *tile_comp) {
 	int2 img_size = make_int2(tile_comp->width, tile_comp->height);
 	int2 step = make_int2(tile_comp->width, tile_comp->height);
 
-	sub_x = (int *)malloc((tile_comp->num_dlvls - 1) * sizeof(int));
-	sub_y = (int *)malloc((tile_comp->num_dlvls - 1) * sizeof(int));
+	sub_x = (int *)my_malloc((tile_comp->num_dlvls - 1) * sizeof(int));
+	sub_y = (int *)my_malloc((tile_comp->num_dlvls - 1) * sizeof(int));
 
 	for(i = 0; i < tile_comp->num_dlvls - 1; i++) {
 		sub_x[i] = (img_size.x % 2 == 1) ? 1 : 0;

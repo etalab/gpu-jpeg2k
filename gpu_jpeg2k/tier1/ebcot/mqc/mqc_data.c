@@ -10,7 +10,7 @@
 struct mqc_data_cblk*
 mqc_data_cblk_create()
 {
-    struct mqc_data_cblk* cblk = (struct mqc_data_cblk*)malloc(sizeof(struct mqc_data_cblk));
+    struct mqc_data_cblk* cblk = (struct mqc_data_cblk*)my_malloc(sizeof(struct mqc_data_cblk));
     cblk->cxds = 0;
     cblk->cxd_count = 0;
     cblk->_cxd_alloc_count = 0;
@@ -35,7 +35,7 @@ mqc_data_cblk_append(struct mqc_data_cblk* cblk, int cx, int d)
     if ( cblk->cxd_count > cblk->_cxd_alloc_count ) {
         if ( cblk->_cxd_alloc_count == 0 ) {
             cblk->_cxd_alloc_count = MQC_DATA_CBLK_CXDS_ALLOC_COUNT;
-            cblk->cxds = (struct mqc_data_cxd*)malloc(cblk->_cxd_alloc_count * sizeof(struct mqc_data_cxd));
+            cblk->cxds = (struct mqc_data_cxd*)my_malloc(cblk->_cxd_alloc_count * sizeof(struct mqc_data_cxd));
             if ( cblk->cxds == 0 ) {
                 printf("Failed to alloc CX,D array of size %d\n",cblk->_cxd_alloc_count);
                 return 0;
@@ -69,7 +69,7 @@ mqc_data_cblk_destroy(struct mqc_data_cblk* cblk)
 struct mqc_data*
 mqc_data_create()
 {
-    struct mqc_data* data = (struct mqc_data*)malloc(sizeof(struct mqc_data));
+    struct mqc_data* data = (struct mqc_data*)my_malloc(sizeof(struct mqc_data));
     data->filename[0] = '\0';
     data->number = 0;
     data->cblks = 0;
@@ -87,7 +87,7 @@ mqc_data_append(struct mqc_data* data, struct mqc_data_cblk* cblk)
     if ( data->cblk_count > data->_cblk_alloc_count ) {
         if ( data->_cblk_alloc_count == 0 ) {
             data->_cblk_alloc_count = MQC_DATA_CBLK_LIST_ALLOC_COUNT;
-            data->cblks = (struct mqc_data_cblk**)malloc(data->_cblk_alloc_count * sizeof(struct mqc_data_cblk*));
+            data->cblks = (struct mqc_data_cblk**)my_malloc(data->_cblk_alloc_count * sizeof(struct mqc_data_cblk*));
             if ( data->cblks == 0 ) {
                 printf("Failed to alloc CBLK array of size %d\n",data->_cblk_alloc_count);
                 exit(1);
@@ -113,7 +113,7 @@ mqc_data_append_start_params(int w, int h, int *coeff_data, int magbits, int ori
 	cblk->h = h;
 	cblk->nominalWidth = w;
 	cblk->nominalHeight = h;
-	cblk->coefficients = (int *) malloc(sizeof(int) * cblk->w * cblk->h);
+	cblk->coefficients = (int *) my_malloc(sizeof(int) * cblk->w * cblk->h);
 	memcpy(cblk->coefficients, coeff_data, sizeof(int) * cblk->w * cblk->h);
 	cblk->subband = orient; // ?
 	cblk->dwtLevel = level;
@@ -184,7 +184,7 @@ mqc_data_on_cblk_bytes(unsigned char* bytes, int byte_count, void* param)
     struct mqc_data* data = (struct mqc_data*)param;
     if ( data->cblk_count > 0 ) {
         struct mqc_data_cblk* cblk = data->cblks[data->cblk_count - 1];
-        cblk->bytes = (unsigned char*)malloc(byte_count * sizeof(unsigned char));
+        cblk->bytes = (unsigned char*)my_malloc(byte_count * sizeof(unsigned char));
         memcpy(cblk->bytes,bytes,byte_count * sizeof(unsigned char));
         cblk->byte_count = byte_count;
     }

@@ -82,13 +82,13 @@ void read_header(const char *filename_header, type_image_hyper *image)
  *
  * @param path Path to hdr image file.
  * @param path Path to bsq image file.
- * @param _container Pointer to a malloc'ed memory for type_image.
+ * @param _container Pointer to a my_malloc'ed memory for type_image.
  */
 int read_hyper_image(type_image **_container, type_parameters *param)
 {
 //	println_start(INFO);
 	type_image *container = *_container;
-	type_image_hyper *image = (type_image_hyper*) malloc(sizeof(type_image_hyper));
+	type_image_hyper *image = (type_image_hyper*) my_malloc(sizeof(type_image_hyper));
 	type_data *data;
 
 	read_header(container->in_hfile, image);
@@ -144,7 +144,7 @@ void save_img_hyper(type_image *img, const char* out_file)
 
 	float *type_float;
 
-	type_float = (float *) malloc(img->width * img->height * img->num_components * sizeof(float));
+	type_float = (float *) my_malloc(img->width * img->height * img->num_components * sizeof(float));
 
 	if(type_float == NULL) {
 		asprintf(msg, "Could not allocate data!");
@@ -223,7 +223,7 @@ void write_imge(float *data, char *filename, type_image_hyper *image)
 void write_one_band(float *data, char *filename, type_image_hyper *image)
 {
 	int size = image->num_lines * image->num_samples * sizeof(short int);
-	short int *odata = (short int*) malloc(size);
+	short int *odata = (short int*) my_malloc(size);
 	int i, j;
 
 	for (j = 0; j < image->num_lines; j++) {

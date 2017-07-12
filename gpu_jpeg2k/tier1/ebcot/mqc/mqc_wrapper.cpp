@@ -133,7 +133,7 @@ static void mqc_gpu_encode_(EntropyCodingTaskInfo *infos, CodeBlockAdditionalInf
 			EntropyCodingTaskInfo * cblk = &infos[cblk_index];
 			struct cxd_block* cxd_block = &cxd_blocks[cblk_index];
 			cblk->length = cxd_block->byte_count > 0 ? cxd_block->byte_count : 0;
-			cblk->codeStream = (unsigned char *)malloc(sizeof(unsigned char) * cxd_block->byte_count);
+			cblk->codeStream = (unsigned char *)my_malloc(sizeof(unsigned char) * cxd_block->byte_count);
 			memcpy(cblk->codeStream, &bytes[cxd_block->byte_begin], sizeof(unsigned char) * cxd_block->byte_count);
 		}
 
@@ -203,14 +203,14 @@ void mqc_gpu_encode_test() {
     cudaMemcpy((void*)d_cxds, (void*)cxds, cxd_size * sizeof(unsigned char), cudaMemcpyHostToDevice);
 
     int codeBlocks = mqc_data->cblk_count;
-    CodeBlockAdditionalInfo *h_infos = (CodeBlockAdditionalInfo *) malloc(sizeof(CodeBlockAdditionalInfo) * codeBlocks);
+    CodeBlockAdditionalInfo *h_infos = (CodeBlockAdditionalInfo *) my_malloc(sizeof(CodeBlockAdditionalInfo) * codeBlocks);
 
     for(int i = 0; i < codeBlocks; ++i) {
     	struct mqc_data_cblk* cblk = mqc_data->cblks[i];
     	h_infos[i].length = cblk->cxd_count;
     }
 
-    EntropyCodingTaskInfo *infos = (EntropyCodingTaskInfo *) malloc(sizeof(EntropyCodingTaskInfo) * codeBlocks);
+    EntropyCodingTaskInfo *infos = (EntropyCodingTaskInfo *) my_malloc(sizeof(EntropyCodingTaskInfo) * codeBlocks);
 
 	mqc_gpu_encode_(infos, h_infos, codeBlocks, d_cxds, maxOutLength);
 

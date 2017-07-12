@@ -34,9 +34,9 @@ along with GPU JPEG2K. If not, see <http://www.gnu.org/licenses/>.
 #include "../tier2/codestream.h"
 
 box *init_box() {
-	box *new = malloc(sizeof(box));
-	new->lbox = (unsigned char *)malloc(sizeof(char) * 5);
-	new->tbox = (unsigned char *)malloc(sizeof(char) * 5);
+	box *new = my_malloc(sizeof(box));
+	new->lbox = (unsigned char *)my_malloc(sizeof(char) * 5);
+	new->tbox = (unsigned char *)my_malloc(sizeof(char) * 5);
 }
 
 //dest has to be n+1 long
@@ -93,7 +93,7 @@ unsigned char *read_bytes(unsigned char *dest, FILE *fd, long int n) {
 //box *get_next_box(unsigned char *mem, long int *pos) {
 box *get_next_box(FILE *fd) {
 	println_start(INFO);
-	//box *box = malloc(sizeof(box));
+	//box *box = my_malloc(sizeof(box));
 
 	int read = 0;
 	box *box = init_box();
@@ -110,7 +110,7 @@ box *get_next_box(FILE *fd) {
 	read = 8;
 
 	if(box->length == 1) { //there should be XLbox field present;
-		box->xlbox = malloc(9 * sizeof(char));
+		box->xlbox = my_malloc(9 * sizeof(char));
 		box->xlbox = read_bytes(box->xlbox, fd, 8);
 		box->length = hex_to_long(box->xlbox, 8);
 		read += 8;
@@ -128,7 +128,7 @@ box *get_next_box(FILE *fd) {
 	}
 	box->content_length = box->length - read;
 
-	box->dbox = malloc((box->content_length + 1) * sizeof(char));
+	box->dbox = my_malloc((box->content_length + 1) * sizeof(char));
 	box->dbox = read_bytes(box->dbox, fd, box->content_length);
 	println_var(INFO, "Size of the box : %d", box->length);
 	println_end(INFO);
@@ -140,29 +140,29 @@ box *get_next_box_char(box *superbox) {
 		return NULL;
 
 	char *content = superbox->dbox;
-	box *box = malloc(sizeof(box));
+	box *box = my_malloc(sizeof(box));
 
 	int read = superbox->read;
-	box->lbox = malloc(5 * sizeof(char));
+	box->lbox = my_malloc(5 * sizeof(char));
 	box->lbox = sstrncpy(box->lbox, &content[read], 4); read += 4;
 	box->length = hex_to_long(box->lbox, 4);
 
 	println_var(INFO, "lbox: %i", box->length);
-	box->tbox = malloc(5 * sizeof(char));
+	box->tbox = my_malloc(5 * sizeof(char));
 	box->tbox = sstrncpy(box->tbox, &content[read], 4); read += 4;
 
 	println(INFO, "tbox");
 	//box->length = hex_to_long(box->lbox, 4);
 //	println_var(INFO, "length: %i", box->length);
 	if(box->length == 1) { //there should be XLbox field present;
-		box->xlbox = malloc(9 * sizeof(char));
+		box->xlbox = my_malloc(9 * sizeof(char));
 		box->xlbox = sstrncpy(box->xlbox, &content[read], 8);
 		box->length = hex_to_long(box->xlbox, 8);
 		read += 8;
 	}
 
 	int size = (box->length - (read - superbox->read));
-	box->dbox = malloc((size+1) * sizeof(char));
+	box->dbox = my_malloc((size+1) * sizeof(char));
 	box->dbox = sstrncpy(box->dbox, &content[read], size);
 	read += size;
 
@@ -197,7 +197,7 @@ int dispose_of(box *b) {
 }
 
 int h_filetype_box(box *b, type_image *img) {
-	char *br = malloc(5 * sizeof(char));
+	char *br = my_malloc(5 * sizeof(char));
 	br = strncpy(br, b->dbox, 4);
 	br[4] = 0;
 
@@ -207,7 +207,7 @@ int h_filetype_box(box *b, type_image *img) {
 	} else
 		println(INFO, "Conforms to ISO 15444-1");
 
-	char *minv = malloc(5 * sizeof(char));
+	char *minv = my_malloc(5 * sizeof(char));
 	minv = strncpy(minv, &(b->dbox[4]), 4);
 
 	if(hex_to_long(minv, 4) != 0) {
@@ -220,7 +220,7 @@ int h_filetype_box(box *b, type_image *img) {
 	char *cl;
 	int i = 1;
 	while(left) {
-		cl = malloc(5 * sizeof(char));
+		cl = my_malloc(5 * sizeof(char));
 		cl = strncpy(cl, &(b->dbox)[4 + i*4], 4); left -= 4; i++;
 
 		//TODO: filetype box: codestream profile restrictions
@@ -239,15 +239,15 @@ int h_filetype_box(box *b, type_image *img) {
 }
 
 int h_image_header_box(box *b, type_image *img) {
-	char *cheight = malloc(5 * sizeof(char));
+	char *cheight = my_malloc(5 * sizeof(char));
 	cheight = strncpy(cheight, b->dbox, 4);
 	img->height = hex_to_long(cheight, 4);
 
-	char *cwidth = malloc(5 * sizeof(char));
+	char *cwidth = my_malloc(5 * sizeof(char));
 	cwidth = strncpy(cwidth, &(b->dbox)[4], 4);
 	img->width = hex_to_long(cwidth, 4);
 
-	char *cnum_comp = malloc(3 * sizeof(char));
+	char *cnum_comp = my_malloc(3 * sizeof(char));
 	cnum_comp = strncpy(cnum_comp, &(b->dbox)[8], 2);
 	img->num_components = hex_to_long(cnum_comp, 2);
 
@@ -302,8 +302,8 @@ h_contiguous_codestream_box(box *cbox, type_image *img) {
 
 	long int codestream_len = cbox->content_length;
 
-	type_buffer *src_buff = (type_buffer *) malloc(sizeof(type_buffer));
-	src_buff->data = (uint8_t *) malloc(codestream_len+1);
+	type_buffer *src_buff = (type_buffer *) my_malloc(sizeof(type_buffer));
+	src_buff->data = (uint8_t *) my_malloc(codestream_len+1);
 	src_buff->size = codestream_len;
 
 	src_buff->data = cbox->dbox;

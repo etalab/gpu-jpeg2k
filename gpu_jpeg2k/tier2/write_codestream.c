@@ -29,7 +29,7 @@ along with GPU JPEG2K. If not, see <http://www.gnu.org/licenses/>.
 #include "write_codestream.h"
 
 void write_codestream(type_image *img) {
-	type_buffer *buffer = (type_buffer *) malloc(sizeof(type_buffer));
+	type_buffer *buffer = (type_buffer *) my_malloc(sizeof(type_buffer));
 
 	init_buffer(buffer);
 	encode_codestream(buffer, img);

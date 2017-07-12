@@ -77,7 +77,7 @@ void encode_tasks_test(const char *file_name) {
 	byte *d_cxd_pairs;
 	GPU_JPEG2K::CoefficientState *d_stBuffors;
 
-	CodeBlockAdditionalInfo *h_infos = (CodeBlockAdditionalInfo *) malloc(sizeof(CodeBlockAdditionalInfo) * codeBlocks);
+	CodeBlockAdditionalInfo *h_infos = (CodeBlockAdditionalInfo *) my_malloc(sizeof(CodeBlockAdditionalInfo) * codeBlocks);
 	CodeBlockAdditionalInfo *d_infos;
 
 	cuda_d_allocate_mem((void **) &d_cxd_pairs, sizeof(byte) * codeBlocks * maxOutLength);

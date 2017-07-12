@@ -352,8 +352,8 @@ void decode_tile_mcc(type_mcc_data* mcc, type_tile* tile, type_image* img) {
 	}
 
 	int j=0, k=0;
-	type_data* matrix = (type_data*)malloc(sizeof(type_data)*mct_matrix->length);
-	type_data* off  = (type_data*)malloc(sizeof(type_data)*mct_offset->length);
+	type_data* matrix = (type_data*)my_malloc(sizeof(type_data)*mct_matrix->length);
+	type_data* off  = (type_data*)my_malloc(sizeof(type_data)*mct_offset->length);
 	type_data* matrix_d;
 	type_data* off_d;
 	cudaMalloc(&matrix_d, sizeof(type_data)*mct_matrix->length);

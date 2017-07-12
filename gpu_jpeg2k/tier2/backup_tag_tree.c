@@ -108,16 +108,16 @@ along with GPU JPEG2K. If not, see <http://www.gnu.org/licenses/>.
 //	uint16_t min_val = UINT16_MAX;
 //	uint16_t *child_elems;
 //	uint16_t *parent_elems;
-//	type_tag_tree *tag_tree = (type_tag_tree *)malloc(sizeof(type_tag_tree));
+//	type_tag_tree *tag_tree = (type_tag_tree *)my_malloc(sizeof(type_tag_tree));
 //
 //	assert(w > 0 && h > 0);
 //
 //	/* Allocate memory */
 //	tag_tree->tree_lvls = calc_tag_tree_levels(w, h);
-//	tag_tree->w_vals = (uint16_t **)malloc(tag_tree->tree_lvls * sizeof(uint16_t *));
-//	tag_tree->w_states = (uint16_t **)malloc(tag_tree->tree_lvls * sizeof(uint16_t *));
-//	tag_tree->widths = (uint16_t *)malloc(tag_tree->tree_lvls * sizeof(uint16_t));
-//	tag_tree->heights = (uint16_t *)malloc(tag_tree->tree_lvls * sizeof(uint16_t));
+//	tag_tree->w_vals = (uint16_t **)my_malloc(tag_tree->tree_lvls * sizeof(uint16_t *));
+//	tag_tree->w_states = (uint16_t **)my_malloc(tag_tree->tree_lvls * sizeof(uint16_t *));
+//	tag_tree->widths = (uint16_t *)my_malloc(tag_tree->tree_lvls * sizeof(uint16_t));
+//	tag_tree->heights = (uint16_t *)my_malloc(tag_tree->tree_lvls * sizeof(uint16_t));
 //
 //	t = 0;
 //	tag_tree->widths[0] = tmp_w;
@@ -135,8 +135,8 @@ along with GPU JPEG2K. If not, see <http://www.gnu.org/licenses/>.
 //
 //	for(t = 0; t < tag_tree->tree_lvls; t++)
 //	{
-//		tag_tree->w_vals[t] = (uint16_t *)malloc(tag_tree->widths[t] * tag_tree->heights[t] * sizeof(uint16_t));
-//		tag_tree->w_states[t] = (uint16_t *)malloc(tag_tree->widths[t] * tag_tree->heights[t] * sizeof(uint16_t));
+//		tag_tree->w_vals[t] = (uint16_t *)my_malloc(tag_tree->widths[t] * tag_tree->heights[t] * sizeof(uint16_t));
+//		tag_tree->w_states[t] = (uint16_t *)my_malloc(tag_tree->widths[t] * tag_tree->heights[t] * sizeof(uint16_t));
 //	}
 //
 //	/* Initialize tag tree with default values */

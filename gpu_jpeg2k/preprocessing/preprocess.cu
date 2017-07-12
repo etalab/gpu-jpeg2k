@@ -70,8 +70,8 @@ type_image rct_cpu(type_image *img) {
 	int i,j;
 
 	//printf("[rct]processing: x: %i, y:%i c:%i\n", img->x_size, img->y_size, img->channels);
-	type_image *yuv = (type_image *)malloc(sizeof(type_image));
-	yuv->float_data = (float *)malloc(img->x_size * img->y_size * img->channels * sizeof(float));
+	type_image *yuv = (type_image *)my_malloc(sizeof(type_image));
+	yuv->float_data = (float *)my_malloc(img->x_size * img->y_size * img->channels * sizeof(float));
 	
 	yuv->x_size = img->x_size;
 	yuv->y_size = img->y_size;
@@ -102,8 +102,8 @@ type_image *tcr_cpu(type_image *img) {
 	int i,j;
 
 	//printf("[tcr]processing: x: %i, y:%i c:%i\n", img->x_size, img->y_size, img->channels);
-	type_image *rgb = (type_image *)malloc(sizeof(type_image));
-	rgb->uchar_data = (uchar *)malloc(img->x_size * img->y_size * img->channels * sizeof(uchar));
+	type_image *rgb = (type_image *)my_malloc(sizeof(type_image));
+	rgb->uchar_data = (uchar *)my_malloc(img->x_size * img->y_size * img->channels * sizeof(uchar));
 	
 	rgb->x_size = img->x_size;
 	rgb->y_size = img->y_size;

@@ -81,7 +81,7 @@ float gpuEncode(EntropyCodingTaskInfo *infos, int count, int targetSize)
 	byte *d_outbuf;
 	GPU_JPEG2K::CoefficientState *d_stBuffors;
 
-	CodeBlockAdditionalInfo *h_infos = (CodeBlockAdditionalInfo *) malloc(sizeof(CodeBlockAdditionalInfo) * codeBlocks);
+	CodeBlockAdditionalInfo *h_infos = (CodeBlockAdditionalInfo *) my_malloc(sizeof(CodeBlockAdditionalInfo) * codeBlocks);
 	CodeBlockAdditionalInfo *d_infos;
 
 	cuda_d_allocate_mem((void **) &d_outbuf, sizeof(byte) * codeBlocks * maxOutLength);
@@ -143,7 +143,7 @@ float gpuEncode(EntropyCodingTaskInfo *infos, int count, int targetSize)
 
 			int len = h_infos[i].length;
 
-			infos[i].codeStream = (byte *) malloc(sizeof(byte) * len);
+			infos[i].codeStream = (byte *) my_malloc(sizeof(byte) * len);
 			cuda_memcpy_dth(d_outbuf + i * maxOutLength, infos[i].codeStream, sizeof(byte) * len);
 		}
 		else
@@ -177,7 +177,7 @@ float gpuDecode(EntropyCodingTaskInfo *infos, int count)
 	byte *d_inbuf;
 	GPU_JPEG2K::CoefficientState *d_stBuffors;
 
-	CodeBlockAdditionalInfo *h_infos = (CodeBlockAdditionalInfo *) malloc(sizeof(CodeBlockAdditionalInfo) * codeBlocks);
+	CodeBlockAdditionalInfo *h_infos = (CodeBlockAdditionalInfo *) my_malloc(sizeof(CodeBlockAdditionalInfo) * codeBlocks);
 	CodeBlockAdditionalInfo *d_infos;
 
 	cuda_d_allocate_mem((void **) &d_inbuf, sizeof(byte) * codeBlocks * maxOutLength);
@@ -297,7 +297,7 @@ void encode_tasks_serial(type_tile *tile) {
 	std::list<type_codeblock *> cblks;
 	extract_cblks(tile, cblks);
 
-	EntropyCodingTaskInfo *tasks = (EntropyCodingTaskInfo *) malloc(sizeof(EntropyCodingTaskInfo) * cblks.size());
+	EntropyCodingTaskInfo *tasks = (EntropyCodingTaskInfo *) my_malloc(sizeof(EntropyCodingTaskInfo) * cblks.size());
 
 	std::list<type_codeblock *>::iterator ii = cblks.begin();
 
@@ -389,7 +389,7 @@ void decode_tile(type_tile *tile)
 	std::list<type_codeblock *> cblks;
 	extract_cblks(tile, cblks);
 
-	EntropyCodingTaskInfo *tasks = (EntropyCodingTaskInfo *) malloc(sizeof(EntropyCodingTaskInfo) * cblks.size());
+	EntropyCodingTaskInfo *tasks = (EntropyCodingTaskInfo *) my_malloc(sizeof(EntropyCodingTaskInfo) * cblks.size());
 
 	std::list<type_codeblock *>::iterator ii = cblks.begin();
 

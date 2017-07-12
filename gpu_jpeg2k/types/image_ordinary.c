@@ -49,7 +49,7 @@ along with GPU JPEG2K. If not, see <http://www.gnu.org/licenses/>.
  * @brief Initializes image container
  *
  * @param dib Bitmap opened by FreeImage
- * @param container malloc'ed type_image to be initialized.
+ * @param container my_malloc'ed type_image to be initialized.
  */
 void init_image(FIBITMAP* dib, type_image *container, type_parameters *param)
 {
@@ -146,7 +146,7 @@ void FreeImageErrorHandler(FREE_IMAGE_FORMAT fif, const char *message) {
  * @brief Read image from file.
  *
  * @param path Path to image file.
- * @param _container Pointer to a malloc'ed memory for type_image.
+ * @param _container Pointer to a my_malloc'ed memory for type_image.
  */
 long int read_ordinary_image(type_image **_container, type_parameters *param)
 {
@@ -213,7 +213,7 @@ long int read_ordinary_image(type_image **_container, type_parameters *param)
 		int scan_width = FreeImage_GetPitch(dib);
 		int mem_size = container->height * scan_width;
 
-		BYTE *bits = malloc(mem_size * sizeof(BYTE));
+		BYTE *bits = my_malloc(mem_size * sizeof(BYTE));
 
 		// convert the bitmap to raw bits (top-left pixel first)
 		FreeImage_ConvertToRawBits(bits, dib, scan_width, FreeImage_GetBPP(dib), FI_RGBA_RED_MASK/*FI_RGBA_BLUE_MASK*/, FI_RGBA_GREEN_MASK, /*FI_RGBA_RED_MASK*/FI_RGBA_BLUE_MASK, TRUE);
@@ -346,10 +346,10 @@ void save_tile_comp(type_tile_comp *tile_comp, char *filename)
 {
 	float *image;
 	int size = tile_comp->width * tile_comp->height;
-	image = (float *) malloc(size * sizeof(float));
+	image = (float *) my_malloc(size * sizeof(float));
 	cuda_memcpy_dth(tile_comp->img_data_d, image, size * sizeof(float));
 
-	short int *odata = (short int*) malloc(size * sizeof(short int));
+	short int *odata = (short int*) my_malloc(size * sizeof(short int));
 	int i, j;
 
 	for (j = 0; j < tile_comp->height; j++) {
@@ -377,7 +377,7 @@ void save_tile_comp_with_shift(type_tile_comp *tile_comp, char *filename, int sh
 {
 	float *odata;
 	int size = tile_comp->width * tile_comp->height * sizeof(float);
-	odata = (float *) malloc(size);
+	odata = (float *) my_malloc(size);
 	cuda_memcpy_dth(tile_comp->img_data_d, odata, size);
 	int i, j;
 
@@ -410,7 +410,7 @@ int save_img_ord(type_image *img, const char *filename)
 	type_tile_comp *tile_comp;
 
 	int scan_width = img->width * (img->num_components);
-	BYTE *bits = (BYTE*) malloc(img->height * scan_width * sizeof(BYTE));
+	BYTE *bits = (BYTE*) my_malloc(img->height * scan_width * sizeof(BYTE));
 
 	//	printf("for\n");
 	//exact opposite procedure as in read_img()
@@ -467,7 +467,7 @@ int save_img_grayscale(type_image *img, char *filename)
 			* sizeof(type_data));
 
 	int scan_width = img->width * (img->num_components);
-	BYTE *bits = (BYTE*) malloc(img->height * scan_width * sizeof(BYTE));
+	BYTE *bits = (BYTE*) my_malloc(img->height * scan_width * sizeof(BYTE));
 
 	//	printf("for\n");
 	//exact opposite procedure as in read_img()

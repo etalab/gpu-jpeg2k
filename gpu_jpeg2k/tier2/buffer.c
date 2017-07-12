@@ -31,7 +31,7 @@ void init_dec_buffer(FILE *fsrc, type_buffer *src_buff) {
 	long file_length = ftell(fsrc);
 	fseek(fsrc, 0, SEEK_SET);
 
-	src_buff->data = (uint8_t *) malloc(file_length);
+	src_buff->data = (uint8_t *) my_malloc(file_length);
 	src_buff->size = file_length;
 
 	fread(src_buff->data, 1, file_length, fsrc);

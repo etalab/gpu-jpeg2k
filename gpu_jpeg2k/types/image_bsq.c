@@ -69,7 +69,7 @@ float *load_image(const char *image_filename, type_image_hyper *image_bsq)
 	float *h_imagen;
 	int i;
 
-	h_imagen = (float*) malloc(image_bsq->num_lines * image_bsq->num_samples * image_bsq->num_bands * sizeof(float));
+	h_imagen = (float*) my_malloc(image_bsq->num_lines * image_bsq->num_samples * image_bsq->num_bands * sizeof(float));
 
 	if (strstr(image_filename, ".bsq") == NULL) {
 		printf("ERROR: Can not find file bsq: %s\n", image_filename);
@@ -118,7 +118,7 @@ float *load_image(const char *image_filename, type_image_hyper *image_bsq)
 			}*/
 
 
-			type_short_int = (short *) malloc(image_bsq->num_lines * image_bsq->num_samples * image_bsq->num_bands
+			type_short_int = (short *) my_malloc(image_bsq->num_lines * image_bsq->num_samples * image_bsq->num_bands
 					* sizeof(short));
 
 			int read_lines = fread(type_short_int, sizeof(short), (image_bsq->num_lines * image_bsq->num_samples * image_bsq->num_bands), fp);
@@ -139,7 +139,7 @@ float *load_image(const char *image_filename, type_image_hyper *image_bsq)
 			break;
 		}
 		case 4: {
-			type_float = (float *) malloc(image_bsq->num_lines * image_bsq->num_samples * image_bsq->num_bands
+			type_float = (float *) my_malloc(image_bsq->num_lines * image_bsq->num_samples * image_bsq->num_bands
 					* sizeof(float));
 			fread(type_float, sizeof(float), (sizeof(float) * image_bsq->lines_samples * image_bsq->num_bands), fp);
 
@@ -150,7 +150,7 @@ float *load_image(const char *image_filename, type_image_hyper *image_bsq)
 			break;
 		}
 		case 5: {
-			type_double = (double *) malloc(image_bsq->num_lines * image_bsq->num_samples * image_bsq->num_bands
+			type_double = (double *) my_malloc(image_bsq->num_lines * image_bsq->num_samples * image_bsq->num_bands
 					* sizeof(double));
 			fread(type_double, sizeof(double), (sizeof(double) * image_bsq->lines_samples * image_bsq->num_bands), fp);
 
@@ -171,7 +171,7 @@ float *load_image(const char *image_filename, type_image_hyper *image_bsq)
  *
  * @param path Path to hdr image file.
  * @param path Path to bsq image file.
- * @param _container Pointer to a malloc'ed memory for type_image.
+ * @param _container Pointer to a my_malloc'ed memory for type_image.
  */
 type_data *read_bsq_image(type_image *container, type_image_hyper *image_bsq, type_parameters *param)
 {

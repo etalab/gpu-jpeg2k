@@ -152,7 +152,7 @@ Index: klt.cu
 +	type_data* means_d;
 +	cudaMalloc(&means_d, sizeof(type_data)*img->num_components);
 +	mean_adjust_data<<< 1,img->num_components >>>(data_pd, means_d, img->width*img->height);
-+	type_data* means = (type_data*)malloc(img->num_components * sizeof(type_data));
++	type_data* means = (type_data*)my_malloc(img->num_components * sizeof(type_data));
 +	cudaMemcpy(means, means_d, sizeof(type_data)*img->num_components, cudaMemcpyDeviceToHost);
 +	cudaFree(means_d);
 +	
@@ -185,7 +185,7 @@ Index: klt.cu
 +			break;
 +	}
 +
-+	type_data* transform = (type_data*)malloc(img->num_components * (img->num_components - odciecie) * sizeof(type_data));
++	type_data* transform = (type_data*)my_malloc(img->num_components * (img->num_components - odciecie) * sizeof(type_data));
 +	for(i=0; i<img->num_components; ++i) {
 +		for(int j=0; j<img->num_components - odciecie; ++j) {
 +			transform[i * (img->num_components - odciecie) + j] = output[i * img->num_components + j];
@@ -300,8 +300,8 @@ Index: klt.cu
 +	}
 +
 +	int j=0, k=0;
-+	type_data* matrix = (type_data*)malloc(sizeof(type_data)*mct_matrix->length);
-+	type_data* off  = (type_data*)malloc(sizeof(type_data)*mct_offset->length);
++	type_data* matrix = (type_data*)my_malloc(sizeof(type_data)*mct_matrix->length);
++	type_data* off  = (type_data*)my_malloc(sizeof(type_data)*mct_offset->length);
 +	type_data* matrix_d;
 +	type_data* off_d;
 +	cudaMalloc(&matrix_d, sizeof(type_data)*mct_matrix->length);

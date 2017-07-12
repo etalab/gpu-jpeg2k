@@ -59,7 +59,7 @@ type_tag_tree *tag_tree_create(int num_leafs_h, int num_leafs_v)
 	int num_lvls;
 	int n;
 
-	tree = (type_tag_tree *) malloc(sizeof(type_tag_tree));
+	tree = (type_tag_tree *) my_malloc(sizeof(type_tag_tree));
 	if (!tree) {
 		printf("Error!\n");
 		return NULL;
