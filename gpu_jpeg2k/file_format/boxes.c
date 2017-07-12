@@ -121,6 +121,7 @@ box *get_next_box(FILE *fd) {
 
 	box->dbox = malloc((box->content_length + 1) * sizeof(char));
 	box->dbox = read_bytes(box->dbox, fd, box->content_length);
+	println_var(INFO, "Size of the box : %d", box->length);
 	println_end(INFO);
 	return box;
 }

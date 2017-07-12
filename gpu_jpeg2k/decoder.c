@@ -95,6 +95,8 @@ int main(int argc, char **argv)
 		jp2_parse_boxes(fsrc, img);
 		fclose(fsrc);
 
+		println_var(INFO, "Number of tiles : %d", img->num_tiles);
+
 		// Do decoding for all tiles
 		for(i = 0; i < img->num_tiles; i++) {
 			tile = &(img->tile[i]);
