@@ -6,6 +6,9 @@ While you are in the root directory of the project issue following commands:
 > cmake ..
 > make
 
+To build project in release mode and also builds libraries as shared call cmake with following options:
+> cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ..
+
 There should be brand new executable in the build directory.
 
 You can also build only chosen module:

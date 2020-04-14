@@ -104,4 +104,6 @@ typedef struct _box {
 //box *get_next_box(unsigned char *mem, long int *pos);
 box *get_next_box(FILE *fd);
 
+int jp2_parse_boxes(FILE *fd, type_image *img);
+
 #endif
